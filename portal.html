@@ -638,6 +638,15 @@
     margin: 0;
   }
 
+  .delete-link {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--error-text);
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
   .field-note {
     font-size: 12px;
     color: var(--muted);
@@ -1830,11 +1839,40 @@
         <div class="roster-item">
           <p class="roster-item-name">${c.name}</p>
           <p class="roster-item-meta">${c.level}</p>
+          <a class="delete-link" data-id="${c.id}" data-name="${c.name}">Delete class</a>
         </div>
       `).join("");
+      list.querySelectorAll(".delete-link").forEach(link => {
+        link.addEventListener("click", () => deleteClass(link.dataset.id, link.dataset.name));
+      });
     } catch (err) {
       list.innerHTML = "";
       showMsg("addClassMsg", err.message || "Could not load classes.", "error");
+    }
+  }
+
+  async function deleteClass(classId, name) {
+    if (!confirm(`Delete class "${name}"? This can't be undone.`)) return;
+    clearMsg("addClassMsg");
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("addClassMsg", data.error || "Could not delete class.", "error");
+        return;
+      }
+      showMsg("addClassMsg", data.message || "Class deleted.", "success");
+      loadClassesForManagement();
+      populateClassDropdowns();
+      populateAssignClassSelect();
+      if (el("attClassSelect")) populateAttClassSelect();
+      if (el("assignClassInput")) populateAssignClassInput();
+      if (el("viewAssignClassSelect")) populateViewAssignClassSelect();
+    } catch (err) {
+      showMsg("addClassMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -1996,8 +2034,13 @@
         <div class="roster-item">
           <p class="roster-item-name">${s.name}</p>
           <p class="roster-item-meta">${s.admission_no}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}</p>
+          <a class="delete-link" data-id="${s.id}" data-name="${s.name}">Remove student</a>
         </div>
       `).join("");
+
+      list.querySelectorAll(".delete-link").forEach(link => {
+        link.addEventListener("click", () => deleteStudent(link.dataset.id, link.dataset.name, classId));
+      });
 
       el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>` +
         students.map(s => `<option value="${s.id}">${s.name} (${s.admission_no})</option>`).join("");
@@ -2010,6 +2053,26 @@
   el("viewClassSelect").addEventListener("change", (e) => {
     loadStudentsForClass(e.target.value);
   });
+
+  async function deleteStudent(studentId, name, classId) {
+    if (!confirm(`Remove "${name}" from the roster? Their attendance/assignment history is kept, but they won't be able to sign in anymore.`)) return;
+    clearMsg("studentsMsg");
+    try {
+      const res = await fetch(API_BASE + "/api/students/" + studentId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("studentsMsg", data.error || "Could not remove student.", "error");
+        return;
+      }
+      showMsg("studentsMsg", data.message || "Student removed.", "success");
+      loadStudentsForClass(classId);
+    } catch (err) {
+      showMsg("studentsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
 
   // ---------- Roster: PIN mode toggle (single vs whole class) ----------
   let pinMode = "single";
@@ -2206,8 +2269,12 @@
           <div class="roster-item">
             <p class="roster-item-name">${s.name}</p>
             <p class="roster-item-meta">${s.level}</p>
+            <a class="delete-link" data-id="${s.id}" data-name="${s.name}">Delete subject</a>
           </div>
         `).join("");
+        list.querySelectorAll(".delete-link").forEach(link => {
+          link.addEventListener("click", () => deleteSubject(link.dataset.id, link.dataset.name));
+        });
       }
 
       el("assignSubjectSelect").innerHTML = `<option value="">Select a subject…</option>` +
@@ -2215,6 +2282,26 @@
     } catch (err) {
       list.innerHTML = "";
       showMsg("addSubjectMsg", err.message || "Could not load subjects.", "error");
+    }
+  }
+
+  async function deleteSubject(subjectId, name) {
+    if (!confirm(`Delete subject "${name}"? This can't be undone.`)) return;
+    clearMsg("addSubjectMsg");
+    try {
+      const res = await fetch(API_BASE + "/api/subjects/" + subjectId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("addSubjectMsg", data.error || "Could not delete subject.", "error");
+        return;
+      }
+      showMsg("addSubjectMsg", data.message || "Subject deleted.", "success");
+      loadSubjects();
+    } catch (err) {
+      showMsg("addSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -2624,7 +2711,7 @@
       classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
   }
 
-  el("loadAssignmentsBtn").addEventListener("click", async () => {
+  async function loadAssignmentsList() {
     clearMsg("loadAssignmentsMsg");
     el("submissionsPanel").style.display = "none";
     const list = el("assignmentsList");
@@ -2665,17 +2752,43 @@
           <p class="roster-item-name">${a.title}</p>
           <p class="roster-item-meta">Due ${a.due_date}</p>
           <a class="refresh-link view-submissions-link" data-id="${a.id}" data-title="${a.title}" style="margin:8px 0 0;">View submissions</a>
+          <a class="delete-link" data-id="${a.id}" data-title="${a.title}">Delete assignment</a>
         </div>
       `).join("");
 
       list.querySelectorAll(".view-submissions-link").forEach(link => {
         link.addEventListener("click", () => openSubmissions(link.dataset.id, link.dataset.title));
       });
+      list.querySelectorAll(".delete-link").forEach(link => {
+        link.addEventListener("click", () => deleteAssignment(link.dataset.id, link.dataset.title));
+      });
     } catch (err) {
       list.innerHTML = "";
       showMsg("loadAssignmentsMsg", "Could not reach the portal server. Check your connection.", "error");
     }
-  });
+  }
+
+  el("loadAssignmentsBtn").addEventListener("click", loadAssignmentsList);
+
+  async function deleteAssignment(assignmentId, title) {
+    if (!confirm(`Delete assignment "${title}"? This also removes all student submissions for it.`)) return;
+    clearMsg("loadAssignmentsMsg");
+    try {
+      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("loadAssignmentsMsg", data.error || "Could not delete assignment.", "error");
+        return;
+      }
+      showMsg("loadAssignmentsMsg", data.message || "Assignment deleted.", "success");
+      loadAssignmentsList();
+    } catch (err) {
+      showMsg("loadAssignmentsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
 
   async function openSubmissions(assignmentId, title) {
     clearMsg("submissionsMsg");
