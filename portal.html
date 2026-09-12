@@ -267,60 +267,107 @@
     display: block;
   }
 
-  .admin-top {
+  .admin-header {
     background: var(--maroon);
     background-image: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
     color: var(--ivory);
-    padding: 20px 18px;
+    padding: 20px 18px 18px;
     border-bottom: 3px solid var(--gold);
   }
 
-  .admin-top .greeting {
-    font-family: Georgia, serif;
-    font-size: 17px;
-    margin: 0 0 2px;
+  .admin-header-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
   }
 
-  .admin-top .role-line {
-    font-size: 12.5px;
-    color: #E9D8C9;
+  .admin-crest {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--maroon-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .admin-school-name {
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: 16px;
     margin: 0;
   }
 
-  .admin-top .signout {
-    margin-top: 14px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.35);
-    color: var(--ivory);
-    padding: 7px 14px;
-    border-radius: 6px;
+  .admin-role-subtitle {
     font-size: 12.5px;
+    color: #E9D8C9;
+    font-style: italic;
+    margin: 2px 0 0;
+  }
+
+  .admin-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .admin-user-badge {
+    background: rgba(255,255,255,0.14);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12.5px;
+  }
+
+  .admin-logout-btn {
+    background: var(--ivory);
+    color: var(--maroon-dark);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
   }
 
-  .admin-nav {
+  .level-toggle {
     display: flex;
-    overflow-x: auto;
     background: #fff;
     border-bottom: 1px solid var(--border);
   }
 
-  .admin-nav button {
-    flex: 0 0 auto;
-    padding: 12px 16px;
+  .level-toggle button {
+    flex: 1;
+    padding: 14px 8px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--muted);
-    background: none;
+    color: var(--charcoal);
+    background: var(--ivory);
     border: none;
-    border-bottom: 3px solid transparent;
+    border-right: 1px solid var(--border);
     cursor: pointer;
-    white-space: nowrap;
   }
 
-  .admin-nav button.active {
-    color: var(--maroon);
-    border-bottom: 3px solid var(--gold);
+  .level-toggle button:last-child {
+    border-right: none;
+  }
+
+  .level-toggle button.active {
+    background: var(--maroon);
+    color: #fff;
+  }
+
+  .level-banner {
+    background: #FBF3D9;
+    color: #6B5416;
+    font-size: 13px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
   }
 
   .admin-body {
@@ -438,49 +485,53 @@
     border: 1px solid var(--error-text);
   }
 
-  .level-cards {
+  .tool-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  .level-card {
+  .tool-tile {
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 18px 14px;
+    padding: 22px 10px;
     text-align: center;
+    cursor: pointer;
   }
 
-  .level-card-title {
-    font-family: Georgia, serif;
-    font-size: 14px;
-    margin: 0 0 10px;
-  }
-
-  .level-card-count {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--maroon);
-    margin: 0;
-  }
-
-  .level-card-label {
-    font-size: 12px;
-    color: var(--muted);
-    margin: 0 0 14px;
-  }
-
-  .level-card-btn {
-    width: 100%;
-    padding: 9px;
-    border-radius: 7px;
-    border: 1px solid var(--maroon);
+  .tool-tile:active {
     background: var(--ivory);
-    color: var(--maroon);
+  }
+
+  .tool-icon {
+    display: block;
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .tool-label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  .tool-panel {
+    display: none;
+  }
+
+  .tool-panel.active {
+    display: block;
+  }
+
+  .back-link {
+    display: inline-block;
     font-size: 13px;
+    color: var(--maroon);
     font-weight: 600;
     cursor: pointer;
+    margin-bottom: 16px;
   }
 
   .refresh-link {
@@ -641,104 +692,136 @@
 
 <!-- ===== ADMIN DASHBOARD ===== -->
 <div id="adminShell" class="admin-shell">
-  <div class="admin-top">
-    <p class="greeting" id="adminGreeting">Welcome, Admin</p>
-    <p class="role-line" id="adminRoleLine">general admin</p>
-    <button class="signout" id="adminLogoutBtn">Sign Out</button>
+  <div class="admin-header">
+    <div class="admin-header-top">
+      <div class="admin-crest">FIS</div>
+      <div class="admin-header-text">
+        <p class="admin-school-name">Faith International School, Itobe</p>
+        <p class="admin-role-subtitle" id="adminRoleSubtitle">General Admin</p>
+      </div>
+    </div>
+    <div class="admin-header-actions">
+      <span class="admin-user-badge" id="adminUserBadge">admin</span>
+      <button class="admin-logout-btn" id="adminLogoutBtn">Log Out</button>
+    </div>
   </div>
 
-  <div class="admin-nav" id="adminNav">
-    <button class="active" data-section="overview">Overview</button>
-    <button data-section="approvals">Approvals</button>
-    <button data-section="attendance">Attendance</button>
-    <button data-section="assignments">Assignments</button>
-    <button data-section="results">Results</button>
-    <button data-section="admissions">Admissions</button>
-    <button data-section="fees">Fees</button>
-    <button data-section="roster">Roster</button>
-    <button data-section="announcements">Announcements</button>
+  <div class="level-toggle" id="levelToggle">
+    <button data-level="primary">Primary View</button>
+    <button data-level="secondary">Secondary View</button>
+    <button data-level="both" class="active">Overview (Both)</button>
   </div>
+
+  <div class="level-banner" id="levelBanner"></div>
 
   <div class="admin-body">
 
-    <!-- ---------- OVERVIEW ---------- -->
-    <div id="section-overview" class="admin-section active">
-      <h3>Overview</h3>
-      <p class="sub">Jump into either level's space.</p>
-      <div class="level-cards">
-        <div class="level-card">
-          <p class="level-card-title">Primary Admin Space</p>
-          <p class="level-card-count" id="overviewPrimaryCount">–</p>
-          <p class="level-card-label">pending approvals</p>
-          <button class="level-card-btn" data-level="primary">View Primary</button>
-        </div>
-        <div class="level-card">
-          <p class="level-card-title">Secondary Admin Space</p>
-          <p class="level-card-count" id="overviewSecondaryCount">–</p>
-          <p class="level-card-label">pending approvals</p>
-          <button class="level-card-btn" data-level="secondary">View Secondary</button>
-        </div>
+    <!-- ---------- TOOL GRID ---------- -->
+    <div class="tool-grid" id="toolGrid">
+      <button class="tool-tile" data-tool="approvals">
+        <span class="tool-icon">✅</span>
+        <span class="tool-label">Account Approvals</span>
+      </button>
+      <button class="tool-tile" data-tool="manage-accounts">
+        <span class="tool-icon">🗂️</span>
+        <span class="tool-label">Manage Accounts</span>
+      </button>
+      <button class="tool-tile" data-tool="admissions">
+        <span class="tool-icon">📝</span>
+        <span class="tool-label">Admissions</span>
+      </button>
+      <button class="tool-tile" data-tool="attendance">
+        <span class="tool-icon">📋</span>
+        <span class="tool-label">Attendance</span>
+      </button>
+      <button class="tool-tile" data-tool="assignments">
+        <span class="tool-icon">📚</span>
+        <span class="tool-label">Assignments</span>
+      </button>
+      <button class="tool-tile" data-tool="results">
+        <span class="tool-icon">📄</span>
+        <span class="tool-label">Results Approval</span>
+      </button>
+      <button class="tool-tile" data-tool="fees">
+        <span class="tool-icon">🧾</span>
+        <span class="tool-label">Fee Records</span>
+      </button>
+      <button class="tool-tile" data-tool="roster">
+        <span class="tool-icon">🏫</span>
+        <span class="tool-label">Roster</span>
+      </button>
+      <button class="tool-tile" data-tool="announcements">
+        <span class="tool-icon">📢</span>
+        <span class="tool-label">Announcements</span>
+      </button>
+    </div>
+
+    <!-- ---------- TOOL PANEL (shown after a tile is tapped) ---------- -->
+    <div class="tool-panel" id="toolPanel">
+      <a class="back-link" id="toolBack">&larr; Back to tools</a>
+
+      <!-- ---------- APPROVALS ---------- -->
+      <div id="section-approvals" class="admin-section">
+        <h3>Pending Staff Accounts</h3>
+        <p class="sub" id="approvalsSub">Review requests and grant a role before someone can sign in.</p>
+        <a class="refresh-link" id="refreshApprovals">Refresh list</a>
+        <div id="approvalsMsg" class="msg"></div>
+        <div id="approvalsList"></div>
       </div>
-    </div>
 
-    <!-- ---------- APPROVALS ---------- -->
-    <div id="section-approvals" class="admin-section">
-      <h3>Pending Staff Accounts</h3>
-      <p class="sub" id="approvalsSub">Review requests and grant a role before someone can sign in.</p>
-      <div id="approvalsFilterBar" style="display:none; margin-bottom:14px;">
-        <span id="approvalsFilterLabel" style="font-size:12.5px; color:var(--muted);"></span>
-        <a id="approvalsClearFilter" style="font-size:12.5px; color:var(--maroon); font-weight:600; cursor:pointer; margin-left:8px;">Show all levels</a>
+      <!-- ---------- PLACEHOLDER SECTIONS ---------- -->
+      <div id="section-manage-accounts" class="admin-section">
+        <h3>Manage Accounts</h3>
+        <p class="sub">View and edit existing staff and student accounts.</p>
+        <div class="coming-soon">This section is being built next.</div>
       </div>
-      <a class="refresh-link" id="refreshApprovals">Refresh list</a>
-      <div id="approvalsMsg" class="msg"></div>
-      <div id="approvalsList"></div>
-    </div>
 
-    <!-- ---------- PLACEHOLDER SECTIONS ---------- -->
-    <div id="section-attendance" class="admin-section">
-      <h3>Attendance</h3>
-      <p class="sub">Mark and review class attendance.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-attendance" class="admin-section">
+        <h3>Attendance</h3>
+        <p class="sub">Mark and review class attendance.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-assignments" class="admin-section">
-      <h3>Assignments</h3>
-      <p class="sub">Post and track student assignments.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-assignments" class="admin-section">
+        <h3>Assignments</h3>
+        <p class="sub">Post and track student assignments.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-results" class="admin-section">
-      <h3>Results</h3>
-      <p class="sub">Enter and publish student results.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-results" class="admin-section">
+        <h3>Results Approval</h3>
+        <p class="sub">Enter and publish student results.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-admissions" class="admin-section">
-      <h3>Admissions</h3>
-      <p class="sub">Review and process new admission requests.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-admissions" class="admin-section">
+        <h3>Admissions</h3>
+        <p class="sub">Review and process new admission requests.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-fees" class="admin-section">
-      <h3>Fees</h3>
-      <p class="sub">Track cashier records and fee payments.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-fees" class="admin-section">
+        <h3>Fee Records</h3>
+        <p class="sub">Track cashier records and fee payments.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-roster" class="admin-section">
-      <h3>Roster</h3>
-      <p class="sub">Manage class rosters and student records.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-roster" class="admin-section">
+        <h3>Roster</h3>
+        <p class="sub">Manage class rosters and student records.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
-    <div id="section-announcements" class="admin-section">
-      <h3>Announcements</h3>
-      <p class="sub">Post school-wide or class announcements.</p>
-      <div class="coming-soon">This section is being built next.</div>
-    </div>
+      <div id="section-announcements" class="admin-section">
+        <h3>Announcements</h3>
+        <p class="sub">Post school-wide or class announcements.</p>
+        <div class="coming-soon">This section is being built next.</div>
+      </div>
 
+    </div>
   </div>
 </div>
+
 
 <script>
   // Point this at your live Worker.
@@ -821,15 +904,64 @@
     }
   }
 
+  const ROLE_LABELS = {
+    general_admin: "General Admin",
+    primary_admin: "Primary Admin",
+    secondary_admin: "Secondary Admin"
+  };
+
+  let currentAdminRole = null;
+  let currentLevelFilter = "both"; // 'primary' | 'secondary' | 'both'
+
+  function levelBannerText(role, level) {
+    const roleLabel = ROLE_LABELS[role] || role.replace(/_/g, " ");
+    if (level === "both") {
+      return "Viewing both Primary and Secondary as " + roleLabel + ". Full access to all admin tools below.";
+    }
+    return "Viewing " + level.charAt(0).toUpperCase() + level.slice(1) + " level as " + roleLabel + ". Full access to all " + level + " admin tools below.";
+  }
+
+  function applyLevelToggleUI() {
+    document.querySelectorAll("#levelToggle button").forEach(b => {
+      b.classList.toggle("active", b.dataset.level === currentLevelFilter);
+    });
+    el("levelBanner").textContent = levelBannerText(currentAdminRole, currentLevelFilter);
+  }
+
+  function setLevelFilter(level) {
+    currentLevelFilter = level;
+    applyLevelToggleUI();
+    // If the approvals panel is currently open, refresh it against the new level.
+    if (el("section-approvals").classList.contains("active")) {
+      loadApprovals();
+    }
+  }
+
   function showAdminDashboard(profile) {
     el("loginView").style.display = "none";
     el("dashboard").classList.remove("active");
     el("adminShell").classList.add("active");
 
-    el("adminGreeting").textContent = "Welcome, " + profile.name;
-    el("adminRoleLine").textContent = profile.role.replace(/_/g, " ") + (profile.level ? " · " + profile.level : "");
+    currentAdminRole = profile.role;
+    el("adminRoleSubtitle").textContent = ROLE_LABELS[profile.role] || profile.role.replace(/_/g, " ");
+    el("adminUserBadge").textContent = profile.name;
 
-    loadOverviewCounts();
+    // Non-general admins are locked to their own level; hide the toggle.
+    if (profile.role === "primary_admin") {
+      currentLevelFilter = "primary";
+      el("levelToggle").style.display = "none";
+    } else if (profile.role === "secondary_admin") {
+      currentLevelFilter = "secondary";
+      el("levelToggle").style.display = "none";
+    } else {
+      currentLevelFilter = "both";
+      el("levelToggle").style.display = "flex";
+    }
+    applyLevelToggleUI();
+
+    // Return to the tool grid on every fresh sign-in.
+    el("toolPanel").classList.remove("active");
+    el("toolGrid").style.display = "grid";
   }
 
   function showDashboard(type, profile) {
@@ -949,60 +1081,28 @@
   el("logoutBtn").addEventListener("click", doLogout);
   el("adminLogoutBtn").addEventListener("click", doLogout);
 
-  // ---------- Admin nav switching ----------
-  function switchAdminSection(sectionName) {
-    document.querySelectorAll("#adminNav button").forEach(b => b.classList.remove("active"));
+  // ---------- Tool tiles: open a section, hide the grid ----------
+  function openTool(toolName) {
+    el("toolGrid").style.display = "none";
+    el("toolPanel").classList.add("active");
     document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
-    const navBtn = document.querySelector('#adminNav button[data-section="' + sectionName + '"]');
-    if (navBtn) navBtn.classList.add("active");
-    el("section-" + sectionName).classList.add("active");
+    el("section-" + toolName).classList.add("active");
 
-    if (sectionName === "overview") loadOverviewCounts();
+    if (toolName === "approvals") loadApprovals();
   }
 
-  document.querySelectorAll("#adminNav button").forEach(btn => {
-    btn.addEventListener("click", () => switchAdminSection(btn.dataset.section));
+  document.querySelectorAll(".tool-tile").forEach(btn => {
+    btn.addEventListener("click", () => openTool(btn.dataset.tool));
   });
 
-  // ---------- Overview: primary / secondary counts ----------
-  let currentLevelFilter = null;
-
-  async function fetchPendingCount(level) {
-    try {
-      const res = await fetch(API_BASE + "/api/approvals?level=" + level, {
-        method: "GET",
-        headers: authHeaders()
-      });
-      const data = await res.json();
-      if (!res.ok) return "–";
-      return (data.requests || []).length;
-    } catch (err) {
-      return "–";
-    }
-  }
-
-  async function loadOverviewCounts() {
-    el("overviewPrimaryCount").textContent = "…";
-    el("overviewSecondaryCount").textContent = "…";
-    const [primaryCount, secondaryCount] = await Promise.all([
-      fetchPendingCount("primary"),
-      fetchPendingCount("secondary")
-    ]);
-    el("overviewPrimaryCount").textContent = primaryCount;
-    el("overviewSecondaryCount").textContent = secondaryCount;
-  }
-
-  document.querySelectorAll(".level-card-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      currentLevelFilter = btn.dataset.level;
-      switchAdminSection("approvals");
-      loadApprovals();
-    });
+  el("toolBack").addEventListener("click", () => {
+    el("toolPanel").classList.remove("active");
+    el("toolGrid").style.display = "grid";
   });
 
-  el("approvalsClearFilter").addEventListener("click", () => {
-    currentLevelFilter = null;
-    loadApprovals();
+  // ---------- Level toggle (Primary / Secondary / Overview) ----------
+  document.querySelectorAll("#levelToggle button").forEach(btn => {
+    btn.addEventListener("click", () => setLevelFilter(btn.dataset.level));
   });
 
   // ---------- Approvals: load list ----------
@@ -1026,18 +1126,15 @@
     const list = el("approvalsList");
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
-    if (currentLevelFilter) {
-      el("approvalsFilterBar").style.display = "block";
-      el("approvalsFilterLabel").textContent = "Showing: " + currentLevelFilter + " level";
-      el("approvalsSub").textContent = "Requests for the " + currentLevelFilter + " space.";
+    if (currentLevelFilter === "both") {
+      el("approvalsSub").textContent = "Review requests for both levels and grant a role before someone can sign in.";
     } else {
-      el("approvalsFilterBar").style.display = "none";
-      el("approvalsSub").textContent = "Review requests and grant a role before someone can sign in.";
+      el("approvalsSub").textContent = "Review " + currentLevelFilter + "-level requests and grant a role before someone can sign in.";
     }
 
-    const url = currentLevelFilter
-      ? API_BASE + "/api/approvals?level=" + currentLevelFilter
-      : API_BASE + "/api/approvals";
+    const url = currentLevelFilter === "both"
+      ? API_BASE + "/api/approvals"
+      : API_BASE + "/api/approvals?level=" + currentLevelFilter;
 
     try {
       const res = await fetch(url, {
