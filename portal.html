@@ -534,6 +534,109 @@
     margin-bottom: 16px;
   }
 
+  .roster-subnav {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+
+  .roster-subtab {
+    flex: 1;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--charcoal);
+    background: var(--ivory);
+    border: none;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .roster-subtab:last-child {
+    border-right: none;
+  }
+
+  .roster-subtab.active {
+    background: var(--maroon);
+    color: #fff;
+  }
+
+  .roster-subpanel {
+    display: none;
+  }
+
+  .roster-subpanel.active {
+    display: block;
+  }
+
+  .roster-item {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .roster-item .roster-item-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 2px;
+  }
+
+  .roster-item .roster-item-meta {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .field-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 6px 0 0;
+  }
+
+  .pin-gen-box {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .pin-gen-box h4 {
+    font-family: Georgia, serif;
+    font-size: 15px;
+    margin: 0 0 4px;
+  }
+
+  .pin-gen-box .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  .pin-result-box {
+    margin-top: 16px;
+    background: var(--success-bg);
+    border: 1px solid var(--success-text);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .pin-result-box .pin-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--success-text);
+    margin: 4px 0;
+  }
+
+  .pin-result-box .pin-detail {
+    font-size: 12.5px;
+    color: var(--charcoal);
+  }
+
   .refresh-link {
     display: block;
     text-align: center;
@@ -808,8 +911,105 @@
 
       <div id="section-roster" class="admin-section">
         <h3>Roster</h3>
-        <p class="sub">Manage class rosters and student records.</p>
-        <div class="coming-soon">This section is being built next.</div>
+        <p class="sub">Manage classes and students.</p>
+
+        <div class="roster-subnav">
+          <button class="roster-subtab active" data-rostertab="classes">Classes</button>
+          <button class="roster-subtab" data-rostertab="students">Students</button>
+        </div>
+
+        <!-- ---------- CLASSES ---------- -->
+        <div id="roster-classes" class="roster-subpanel active">
+          <form id="addClassForm">
+            <label for="classNameInput">Class Name</label>
+            <input type="text" id="classNameInput" placeholder="e.g. JSS 1A" required>
+
+            <label for="classLevelInput">Level</label>
+            <select id="classLevelInput" required>
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+            </select>
+
+            <label for="classSortInput">Sort Order (optional)</label>
+            <input type="number" id="classSortInput" placeholder="0">
+
+            <button type="submit" class="submit">Add Class</button>
+          </form>
+          <div id="addClassMsg" class="msg"></div>
+
+          <a class="refresh-link" id="refreshClasses">Refresh classes</a>
+          <div id="classesList"></div>
+        </div>
+
+        <!-- ---------- STUDENTS ---------- -->
+        <div id="roster-students" class="roster-subpanel">
+          <form id="addStudentForm">
+            <label for="stuNameInput">Full Name</label>
+            <input type="text" id="stuNameInput" required>
+
+            <label for="stuClassSelect">Class</label>
+            <select id="stuClassSelect" required>
+              <option value="">Select…</option>
+            </select>
+
+            <div class="row2">
+              <div>
+                <label for="stuGuardianName">Guardian Name</label>
+                <input type="text" id="stuGuardianName">
+              </div>
+              <div>
+                <label for="stuGuardianPhone">Guardian Phone</label>
+                <input type="text" id="stuGuardianPhone">
+              </div>
+            </div>
+
+            <label for="stuSessionJoined">Session Joined (optional)</label>
+            <input type="text" id="stuSessionJoined" placeholder="2026/2027">
+
+            <p class="field-note">Admission number is assigned automatically once the student is added.</p>
+
+            <button type="submit" class="submit">Add Student</button>
+          </form>
+          <div id="addStudentMsg" class="msg"></div>
+
+          <label for="viewClassSelect" style="margin-top:24px;">View students in class</label>
+          <select id="viewClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <div id="studentsMsg" class="msg"></div>
+          <div id="studentsList"></div>
+
+          <div class="pin-gen-box">
+            <h4>Generate Login PIN</h4>
+            <p class="sub">Students need a PIN for a specific term and session before they can sign in.</p>
+
+            <label for="pinStudentSelect">Student</label>
+            <select id="pinStudentSelect">
+              <option value="">Select a student…</option>
+            </select>
+
+            <div class="row2">
+              <div>
+                <label for="pinTermSelect">Term</label>
+                <select id="pinTermSelect">
+                  <option value="">Select…</option>
+                  <option value="First Term">First Term</option>
+                  <option value="Second Term">Second Term</option>
+                  <option value="Third Term">Third Term</option>
+                </select>
+              </div>
+              <div>
+                <label for="pinSessionInput">Session</label>
+                <input type="text" id="pinSessionInput" placeholder="2026/2027">
+              </div>
+            </div>
+
+            <button type="button" id="generatePinBtn" class="submit">Generate PIN</button>
+            <div id="pinGenMsg" class="msg"></div>
+            <div id="pinResultBox" class="pin-result-box" style="display:none;"></div>
+          </div>
+        </div>
       </div>
 
       <div id="section-announcements" class="admin-section">
@@ -934,6 +1134,11 @@
     // If the approvals panel is currently open, refresh it against the new level.
     if (el("section-approvals").classList.contains("active")) {
       loadApprovals();
+    }
+    // If the roster panel is open, refresh classes/dropdowns against the new level.
+    if (el("section-roster").classList.contains("active")) {
+      loadClassesForManagement();
+      populateClassDropdowns();
     }
   }
 
@@ -1089,6 +1294,10 @@
     el("section-" + toolName).classList.add("active");
 
     if (toolName === "approvals") loadApprovals();
+    if (toolName === "roster") {
+      loadClassesForManagement();
+      populateClassDropdowns();
+    }
   }
 
   document.querySelectorAll(".tool-tile").forEach(btn => {
@@ -1228,6 +1437,266 @@
   }
 
   el("refreshApprovals").addEventListener("click", loadApprovals);
+
+  // ---------- Roster: sub-tab switching (Classes / Students) ----------
+  document.querySelectorAll(".roster-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".roster-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".roster-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("roster-" + btn.dataset.rostertab).classList.add("active");
+    });
+  });
+
+  // ---------- Roster: classes ----------
+  function classesQueryLevel() {
+    // "both" means no level filter; otherwise scope to the toggled level.
+    return currentLevelFilter === "both" ? null : currentLevelFilter;
+  }
+
+  async function fetchClasses() {
+    const level = classesQueryLevel();
+    const url = level
+      ? API_BASE + "/api/classes?level=" + level
+      : API_BASE + "/api/classes";
+    const res = await fetch(url, { method: "GET", headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load classes.");
+    return data.classes || [];
+  }
+
+  async function loadClassesForManagement() {
+    const list = el("classesList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+    try {
+      const classes = await fetchClasses();
+      if (!classes.length) {
+        list.innerHTML = `<div class="empty-state">No classes yet. Add one above.</div>`;
+        return;
+      }
+      list.innerHTML = classes.map(c => `
+        <div class="roster-item">
+          <p class="roster-item-name">${c.name}</p>
+          <p class="roster-item-meta">${c.level}</p>
+        </div>
+      `).join("");
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("addClassMsg", err.message || "Could not load classes.", "error");
+    }
+  }
+
+  el("addClassForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("addClassMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          name: el("classNameInput").value.trim(),
+          level: el("classLevelInput").value,
+          sortOrder: el("classSortInput").value ? parseInt(el("classSortInput").value, 10) : 0
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("addClassMsg", data.error || "Could not add class.", "error");
+        return;
+      }
+
+      showMsg("addClassMsg", data.message || "Class added.", "success");
+      e.target.reset();
+      loadClassesForManagement();
+      populateClassDropdowns();
+    } catch (err) {
+      showMsg("addClassMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  el("refreshClasses").addEventListener("click", loadClassesForManagement);
+
+  // Keep the class-level select in step with the current toggle when it's locked to one level.
+  function syncClassLevelSelect() {
+    const level = classesQueryLevel();
+    if (level) {
+      el("classLevelInput").value = level;
+      el("classLevelInput").disabled = true;
+    } else {
+      el("classLevelInput").disabled = false;
+    }
+  }
+
+  // ---------- Roster: students ----------
+  async function populateClassDropdowns() {
+    syncClassLevelSelect();
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+
+    const optionsHtml = `<option value="">Select…</option>` + classes.map(c =>
+      `<option value="${c.id}" data-level="${c.level}">${c.name} (${c.level})</option>`
+    ).join("");
+
+    el("stuClassSelect").innerHTML = optionsHtml;
+    el("viewClassSelect").innerHTML = `<option value="">Select a class…</option>` + classes.map(c =>
+      `<option value="${c.id}" data-level="${c.level}">${c.name} (${c.level})</option>`
+    ).join("");
+  }
+
+  el("addStudentForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("addStudentMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    const classSelect = el("stuClassSelect");
+    const selectedOption = classSelect.options[classSelect.selectedIndex];
+    const classLevel = selectedOption ? selectedOption.dataset.level : null;
+
+    if (!classSelect.value || !classLevel) {
+      showMsg("addStudentMsg", "Please select a class.", "error");
+      btn.disabled = false;
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + "/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          name: el("stuNameInput").value.trim(),
+          classId: classSelect.value,
+          level: classLevel,
+          sessionJoined: el("stuSessionJoined").value.trim() || null,
+          guardianName: el("stuGuardianName").value.trim() || null,
+          guardianPhone: el("stuGuardianPhone").value.trim() || null
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("addStudentMsg", data.error || "Could not add student.", "error");
+        return;
+      }
+
+      showMsg("addStudentMsg", "Student added. Admission number: " + data.admissionNo, "success");
+      e.target.reset();
+
+      // Refresh the students list if we're currently viewing that class.
+      if (el("viewClassSelect").value === classSelect.value) {
+        loadStudentsForClass(classSelect.value);
+      }
+    } catch (err) {
+      showMsg("addStudentMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function loadStudentsForClass(classId) {
+    clearMsg("studentsMsg");
+    const list = el("studentsList");
+
+    if (!classId) {
+      list.innerHTML = "";
+      el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>`;
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/students?classId=" + classId, {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("studentsMsg", data.error || "Could not load students.", "error");
+        return;
+      }
+
+      const students = data.students || [];
+      if (!students.length) {
+        list.innerHTML = `<div class="empty-state">No students in this class yet.</div>`;
+        el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>`;
+        return;
+      }
+
+      list.innerHTML = students.map(s => `
+        <div class="roster-item">
+          <p class="roster-item-name">${s.name}</p>
+          <p class="roster-item-meta">${s.admission_no}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}</p>
+        </div>
+      `).join("");
+
+      el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>` +
+        students.map(s => `<option value="${s.id}">${s.name} (${s.admission_no})</option>`).join("");
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("studentsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("viewClassSelect").addEventListener("change", (e) => {
+    loadStudentsForClass(e.target.value);
+  });
+
+  // ---------- Roster: generate student PIN ----------
+  el("generatePinBtn").addEventListener("click", async () => {
+    clearMsg("pinGenMsg");
+    el("pinResultBox").style.display = "none";
+
+    const studentId = el("pinStudentSelect").value;
+    const term = el("pinTermSelect").value;
+    const session = el("pinSessionInput").value.trim();
+
+    if (!studentId || !term || !session) {
+      showMsg("pinGenMsg", "Please select a student, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("generatePinBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/students/" + studentId + "/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ term, session })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("pinGenMsg", data.error || "Could not generate PIN.", "error");
+        return;
+      }
+
+      const studentName = el("pinStudentSelect").options[el("pinStudentSelect").selectedIndex].text;
+      el("pinResultBox").innerHTML = `
+        <p class="pin-detail">${studentName}</p>
+        <p class="pin-value">${data.pin}</p>
+        <p class="pin-detail">${data.term} · ${data.session}</p>
+      `;
+      el("pinResultBox").style.display = "block";
+    } catch (err) {
+      showMsg("pinGenMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   // ---------- Restore session on page load ----------
   (function restoreSession() {
