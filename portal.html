@@ -916,6 +916,7 @@
         <div class="roster-subnav">
           <button class="roster-subtab active" data-rostertab="classes">Classes</button>
           <button class="roster-subtab" data-rostertab="students">Students</button>
+          <button class="roster-subtab" data-rostertab="subjects">Subjects</button>
         </div>
 
         <!-- ---------- CLASSES ---------- -->
@@ -1008,6 +1009,46 @@
             <button type="button" id="generatePinBtn" class="submit">Generate PIN</button>
             <div id="pinGenMsg" class="msg"></div>
             <div id="pinResultBox" class="pin-result-box" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- ---------- SUBJECTS ---------- -->
+        <div id="roster-subjects" class="roster-subpanel">
+          <form id="addSubjectForm">
+            <label for="subjectNameInput">Subject Name</label>
+            <input type="text" id="subjectNameInput" placeholder="e.g. Mathematics" required>
+
+            <label for="subjectLevelInput">Level</label>
+            <select id="subjectLevelInput" required>
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+            </select>
+
+            <button type="submit" class="submit">Add Subject</button>
+          </form>
+          <div id="addSubjectMsg" class="msg"></div>
+
+          <a class="refresh-link" id="refreshSubjects">Refresh subjects</a>
+          <div id="subjectsList"></div>
+
+          <div class="pin-gen-box">
+            <h4>Assign Subjects to a Class</h4>
+            <p class="sub">Choose a class, then add or remove the subjects it studies.</p>
+
+            <label for="assignClassSelect">Class</label>
+            <select id="assignClassSelect">
+              <option value="">Select a class…</option>
+            </select>
+
+            <label for="assignSubjectSelect">Subject</label>
+            <select id="assignSubjectSelect">
+              <option value="">Select a subject…</option>
+            </select>
+
+            <button type="button" id="assignSubjectBtn" class="submit">Assign to Class</button>
+            <div id="assignSubjectMsg" class="msg"></div>
+
+            <div id="classSubjectsList" style="margin-top:16px;"></div>
           </div>
         </div>
       </div>
@@ -1139,6 +1180,7 @@
     if (el("section-roster").classList.contains("active")) {
       loadClassesForManagement();
       populateClassDropdowns();
+      loadSubjects();
     }
   }
 
@@ -1297,6 +1339,8 @@
     if (toolName === "roster") {
       loadClassesForManagement();
       populateClassDropdowns();
+      loadSubjects();
+      populateAssignClassSelect();
     }
   }
 
@@ -1693,6 +1737,201 @@
       el("pinResultBox").style.display = "block";
     } catch (err) {
       showMsg("pinGenMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Roster: subjects ----------
+  async function fetchSubjects() {
+    const level = classesQueryLevel();
+    const url = level
+      ? API_BASE + "/api/subjects?level=" + level
+      : API_BASE + "/api/subjects";
+    const res = await fetch(url, { method: "GET", headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load subjects.");
+    return data.subjects || [];
+  }
+
+  function syncSubjectLevelSelect() {
+    const level = classesQueryLevel();
+    if (level) {
+      el("subjectLevelInput").value = level;
+      el("subjectLevelInput").disabled = true;
+    } else {
+      el("subjectLevelInput").disabled = false;
+    }
+  }
+
+  async function loadSubjects() {
+    syncSubjectLevelSelect();
+    const list = el("subjectsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+    try {
+      const subjects = await fetchSubjects();
+      if (!subjects.length) {
+        list.innerHTML = `<div class="empty-state">No subjects yet. Add one above.</div>`;
+      } else {
+        list.innerHTML = subjects.map(s => `
+          <div class="roster-item">
+            <p class="roster-item-name">${s.name}</p>
+            <p class="roster-item-meta">${s.level}</p>
+          </div>
+        `).join("");
+      }
+
+      el("assignSubjectSelect").innerHTML = `<option value="">Select a subject…</option>` +
+        subjects.map(s => `<option value="${s.id}">${s.name} (${s.level})</option>`).join("");
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("addSubjectMsg", err.message || "Could not load subjects.", "error");
+    }
+  }
+
+  el("addSubjectForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("addSubjectMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          name: el("subjectNameInput").value.trim(),
+          level: el("subjectLevelInput").value
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("addSubjectMsg", data.error || "Could not add subject.", "error");
+        return;
+      }
+
+      showMsg("addSubjectMsg", data.message || "Subject added.", "success");
+      e.target.reset();
+      loadSubjects();
+    } catch (err) {
+      showMsg("addSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  el("refreshSubjects").addEventListener("click", loadSubjects);
+
+  async function populateAssignClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("assignClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  async function loadClassSubjects(classId) {
+    clearMsg("assignSubjectMsg");
+    const list = el("classSubjectsList");
+
+    if (!classId) {
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("assignSubjectMsg", data.error || "Could not load class subjects.", "error");
+        return;
+      }
+
+      const subjects = data.subjects || [];
+      if (!subjects.length) {
+        list.innerHTML = `<div class="empty-state">No subjects assigned to this class yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = subjects.map(s => `
+        <div class="roster-item" data-subject-id="${s.id}">
+          <p class="roster-item-name">${s.name}</p>
+          <p class="roster-item-meta">${s.level}</p>
+          <a class="refresh-link remove-subject-link" data-subject-id="${s.id}" style="margin:8px 0 0;">Remove from class</a>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".remove-subject-link").forEach(link => {
+        link.addEventListener("click", () => removeSubjectFromClass(classId, link.dataset.subjectId));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function removeSubjectFromClass(classId, subjectId) {
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects/" + subjectId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("assignSubjectMsg", data.error || "Could not remove subject.", "error");
+        return;
+      }
+      loadClassSubjects(classId);
+    } catch (err) {
+      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("assignClassSelect").addEventListener("change", (e) => {
+    loadClassSubjects(e.target.value);
+  });
+
+  el("assignSubjectBtn").addEventListener("click", async () => {
+    clearMsg("assignSubjectMsg");
+    const classId = el("assignClassSelect").value;
+    const subjectId = el("assignSubjectSelect").value;
+
+    if (!classId || !subjectId) {
+      showMsg("assignSubjectMsg", "Please select both a class and a subject.", "error");
+      return;
+    }
+
+    const btn = el("assignSubjectBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ subjectId })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("assignSubjectMsg", data.error || "Could not assign subject.", "error");
+        return;
+      }
+
+      showMsg("assignSubjectMsg", data.message || "Subject assigned.", "success");
+      loadClassSubjects(classId);
+    } catch (err) {
+      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
