@@ -615,6 +615,27 @@
     margin: 0 0 14px;
   }
 
+  .pin-mode-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--charcoal);
+    background: var(--ivory);
+    border: none;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .pin-mode-btn:last-child {
+    border-right: none;
+  }
+
+  .pin-mode-btn.active {
+    background: var(--maroon);
+    color: #fff;
+  }
+
   .pin-result-box {
     margin-top: 16px;
     background: var(--success-bg);
@@ -635,6 +656,31 @@
   .pin-result-box .pin-detail {
     font-size: 12.5px;
     color: var(--charcoal);
+  }
+
+  .pin-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    text-align: left;
+  }
+
+  .pin-result-row:last-child {
+    border-bottom: none;
+  }
+
+  .pin-result-row .pin-result-name {
+    font-size: 13px;
+    color: var(--charcoal);
+  }
+
+  .pin-result-row .pin-result-value {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--success-text);
   }
 
   .refresh-link {
@@ -985,10 +1031,21 @@
             <h4>Generate Login PIN</h4>
             <p class="sub">Students need a PIN for a specific term and session before they can sign in.</p>
 
-            <label for="pinStudentSelect">Student</label>
-            <select id="pinStudentSelect">
-              <option value="">Select a student…</option>
-            </select>
+            <div class="roster-subnav" id="pinModeToggle">
+              <button class="pin-mode-btn active" data-pinmode="single">One Student</button>
+              <button class="pin-mode-btn" data-pinmode="class">Whole Class</button>
+            </div>
+
+            <div id="pinModeSingle">
+              <label for="pinStudentSelect">Student</label>
+              <select id="pinStudentSelect">
+                <option value="">Select a student…</option>
+              </select>
+            </div>
+
+            <div id="pinModeClass" style="display:none;">
+              <p class="field-note">Generates a PIN for every student currently listed above in "View students in class". Select a class there first.</p>
+            </div>
 
             <div class="row2">
               <div>
@@ -1647,6 +1704,8 @@
     }
   });
 
+  let currentClassStudents = [];
+
   async function loadStudentsForClass(classId) {
     clearMsg("studentsMsg");
     const list = el("studentsList");
@@ -1654,6 +1713,7 @@
     if (!classId) {
       list.innerHTML = "";
       el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>`;
+      currentClassStudents = [];
       return;
     }
 
@@ -1673,6 +1733,8 @@
       }
 
       const students = data.students || [];
+      currentClassStudents = students;
+
       if (!students.length) {
         list.innerHTML = `<div class="empty-state">No students in this class yet.</div>`;
         el("pinStudentSelect").innerHTML = `<option value="">Select a student…</option>`;
@@ -1698,17 +1760,31 @@
     loadStudentsForClass(e.target.value);
   });
 
-  // ---------- Roster: generate student PIN ----------
+  // ---------- Roster: PIN mode toggle (single vs whole class) ----------
+  let pinMode = "single";
+
+  document.querySelectorAll(".pin-mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pin-mode-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      pinMode = btn.dataset.pinmode;
+      el("pinModeSingle").style.display = pinMode === "single" ? "block" : "none";
+      el("pinModeClass").style.display = pinMode === "class" ? "block" : "none";
+      clearMsg("pinGenMsg");
+      el("pinResultBox").style.display = "none";
+    });
+  });
+
+  // ---------- Roster: generate student PIN (single or whole class) ----------
   el("generatePinBtn").addEventListener("click", async () => {
     clearMsg("pinGenMsg");
     el("pinResultBox").style.display = "none";
 
-    const studentId = el("pinStudentSelect").value;
     const term = el("pinTermSelect").value;
     const session = el("pinSessionInput").value.trim();
 
-    if (!studentId || !term || !session) {
-      showMsg("pinGenMsg", "Please select a student, term, and session.", "error");
+    if (!term || !session) {
+      showMsg("pinGenMsg", "Please select a term and session.", "error");
       return;
     }
 
@@ -1716,25 +1792,77 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/students/" + studentId + "/pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ term, session })
-      });
-      const data = await res.json();
+      if (pinMode === "single") {
+        const studentId = el("pinStudentSelect").value;
+        if (!studentId) {
+          showMsg("pinGenMsg", "Please select a student.", "error");
+          return;
+        }
 
-      if (!res.ok) {
-        showMsg("pinGenMsg", data.error || "Could not generate PIN.", "error");
-        return;
+        const res = await fetch(API_BASE + "/api/students/" + studentId + "/pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ term, session })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMsg("pinGenMsg", data.error || "Could not generate PIN.", "error");
+          return;
+        }
+
+        const studentName = el("pinStudentSelect").options[el("pinStudentSelect").selectedIndex].text;
+        el("pinResultBox").innerHTML = `
+          <p class="pin-detail">${studentName}</p>
+          <p class="pin-value">${data.pin}</p>
+          <p class="pin-detail">${data.term} · ${data.session}</p>
+        `;
+        el("pinResultBox").style.display = "block";
+
+      } else {
+        // Whole class: generate one at a time for every student currently loaded.
+        if (!currentClassStudents.length) {
+          showMsg("pinGenMsg", "No students loaded. Select a class in \"View students in class\" above first.", "error");
+          return;
+        }
+
+        const rows = [];
+        for (const s of currentClassStudents) {
+          try {
+            const res = await fetch(API_BASE + "/api/students/" + s.id + "/pin", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...authHeaders() },
+              body: JSON.stringify({ term, session })
+            });
+            const data = await res.json();
+            rows.push({
+              name: s.name,
+              admissionNo: s.admission_no,
+              pin: res.ok ? data.pin : null,
+              error: res.ok ? null : (data.error || "Failed")
+            });
+          } catch (err) {
+            rows.push({ name: s.name, admissionNo: s.admission_no, pin: null, error: "Network error" });
+          }
+        }
+
+        const failCount = rows.filter(r => !r.pin).length;
+        if (failCount) {
+          showMsg("pinGenMsg", failCount + " of " + rows.length + " could not be generated.", "error");
+        } else {
+          showMsg("pinGenMsg", "Generated PINs for all " + rows.length + " student(s).", "success");
+        }
+
+        el("pinResultBox").innerHTML =
+          `<p class="pin-detail" style="margin-bottom:8px;">${term} · ${session}</p>` +
+          rows.map(r => `
+            <div class="pin-result-row">
+              <span class="pin-result-name">${r.name} (${r.admissionNo})</span>
+              <span class="pin-result-value">${r.pin ? r.pin : "—"}</span>
+            </div>
+          `).join("");
+        el("pinResultBox").style.display = "block";
       }
-
-      const studentName = el("pinStudentSelect").options[el("pinStudentSelect").selectedIndex].text;
-      el("pinResultBox").innerHTML = `
-        <p class="pin-detail">${studentName}</p>
-        <p class="pin-value">${data.pin}</p>
-        <p class="pin-detail">${data.term} · ${data.session}</p>
-      `;
-      el("pinResultBox").style.display = "block";
     } catch (err) {
       showMsg("pinGenMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
