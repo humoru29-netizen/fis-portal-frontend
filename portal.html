@@ -542,7 +542,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab {
+  .roster-subtab, .assign-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -554,21 +554,68 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active {
+  .roster-subtab.active, .assign-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel {
+  .roster-subpanel, .assign-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active {
     display: block;
+  }
+
+  .submission-row {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .submission-row .submission-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 6px;
+  }
+
+  .submission-status-badge {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+
+  .submission-status-badge.not_submitted {
+    background: var(--error-bg);
+    color: var(--error-text);
+  }
+
+  .submission-status-badge.submitted {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  .submission-status-badge.late {
+    background: #FBF3D9;
+    color: #6B5416;
+  }
+
+  .submission-status-badge.graded {
+    background: #E8EAF6;
+    color: #33408A;
+  }
+
+  .submission-row select, .submission-row input {
+    margin-bottom: 8px;
   }
 
   .roster-item {
@@ -1030,7 +1077,90 @@
       <div id="section-assignments" class="admin-section">
         <h3>Assignments</h3>
         <p class="sub">Post and track student assignments.</p>
-        <div class="coming-soon">This section is being built next.</div>
+
+        <div class="roster-subnav">
+          <button class="assign-subtab active" data-assigntab="create">Create</button>
+          <button class="assign-subtab" data-assigntab="view">View &amp; Grade</button>
+        </div>
+
+        <!-- ---------- CREATE ---------- -->
+        <div id="assign-create" class="assign-subpanel active">
+          <form id="createAssignmentForm">
+            <label for="assignClassInput">Class</label>
+            <select id="assignClassInput" required>
+              <option value="">Select…</option>
+            </select>
+
+            <label for="assignSubjectInput">Subject</label>
+            <select id="assignSubjectInput" required>
+              <option value="">Select a class first…</option>
+            </select>
+
+            <label for="assignTitleInput">Title</label>
+            <input type="text" id="assignTitleInput" required>
+
+            <label for="assignDescInput">Description (optional)</label>
+            <input type="text" id="assignDescInput">
+
+            <div class="row2">
+              <div>
+                <label for="assignDueDateInput">Due Date</label>
+                <input type="date" id="assignDueDateInput" required>
+              </div>
+              <div>
+                <label for="assignTermInput">Term</label>
+                <select id="assignTermInput" required>
+                  <option value="">Select…</option>
+                  <option value="First Term">First Term</option>
+                  <option value="Second Term">Second Term</option>
+                  <option value="Third Term">Third Term</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="assignSessionInput">Session</label>
+            <input type="text" id="assignSessionInput" placeholder="2026/2027" required>
+
+            <button type="submit" class="submit">Create Assignment</button>
+          </form>
+          <div id="createAssignmentMsg" class="msg"></div>
+        </div>
+
+        <!-- ---------- VIEW & GRADE ---------- -->
+        <div id="assign-view" class="assign-subpanel">
+          <label for="viewAssignClassSelect">Class</label>
+          <select id="viewAssignClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="viewAssignTermSelect">Term</label>
+              <select id="viewAssignTermSelect">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="viewAssignSessionInput">Session</label>
+              <input type="text" id="viewAssignSessionInput" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="loadAssignmentsBtn" class="submit">Load Assignments</button>
+          <div id="loadAssignmentsMsg" class="msg"></div>
+
+          <div id="assignmentsList"></div>
+
+          <div id="submissionsPanel" style="display:none; margin-top:20px;">
+            <a class="back-link" id="backToAssignmentsList">&larr; Back to assignments</a>
+            <h4 id="submissionsAssignmentTitle" style="font-family: Georgia, serif; font-size: 15px; margin: 0 0 12px;"></h4>
+            <div id="submissionsMsg" class="msg"></div>
+            <div id="submissionsList"></div>
+          </div>
+        </div>
       </div>
 
       <div id="section-results" class="admin-section">
@@ -1345,6 +1475,11 @@
     if (el("section-attendance").classList.contains("active")) {
       populateAttClassSelect();
     }
+    // If the assignments panel is open, refresh its class dropdowns against the new level.
+    if (el("section-assignments").classList.contains("active")) {
+      populateAssignClassInput();
+      populateViewAssignClassSelect();
+    }
   }
 
   function showAdminDashboard(profile) {
@@ -1510,6 +1645,10 @@
       if (!el("attDateInput").value) {
         el("attDateInput").value = todayLocalISODate();
       }
+    }
+    if (toolName === "assignments") {
+      populateAssignClassInput();
+      populateViewAssignClassSelect();
     }
   }
 
@@ -2383,6 +2522,246 @@
     } finally {
       btn.disabled = false;
     }
+  });
+
+  // ---------- Assignments: sub-tab switching (Create / View & Grade) ----------
+  document.querySelectorAll(".assign-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".assign-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".assign-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("assign-" + btn.dataset.assigntab).classList.add("active");
+    });
+  });
+
+  // ---------- Assignments: create ----------
+  async function populateAssignClassInput() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("assignClassInput").innerHTML = `<option value="">Select…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("assignClassInput").addEventListener("change", async (e) => {
+    const classId = e.target.value;
+    el("assignSubjectInput").innerHTML = `<option value="">Loading…</option>`;
+
+    if (!classId) {
+      el("assignSubjectInput").innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      const subjects = data.subjects || [];
+
+      if (!subjects.length) {
+        el("assignSubjectInput").innerHTML = `<option value="">No subjects assigned to this class yet</option>`;
+        return;
+      }
+
+      el("assignSubjectInput").innerHTML = `<option value="">Select…</option>` +
+        subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+    } catch (err) {
+      el("assignSubjectInput").innerHTML = `<option value="">Could not load subjects</option>`;
+    }
+  });
+
+  el("createAssignmentForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("createAssignmentMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          title: el("assignTitleInput").value.trim(),
+          description: el("assignDescInput").value.trim(),
+          classId: el("assignClassInput").value,
+          subjectId: el("assignSubjectInput").value,
+          dueDate: el("assignDueDateInput").value,
+          term: el("assignTermInput").value,
+          session: el("assignSessionInput").value.trim()
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("createAssignmentMsg", data.error || "Could not create assignment.", "error");
+        return;
+      }
+
+      showMsg("createAssignmentMsg", data.message || "Assignment created.", "success");
+      e.target.reset();
+      el("assignSubjectInput").innerHTML = `<option value="">Select a class first…</option>`;
+    } catch (err) {
+      showMsg("createAssignmentMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Assignments: view & grade ----------
+  async function populateViewAssignClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("viewAssignClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("loadAssignmentsBtn").addEventListener("click", async () => {
+    clearMsg("loadAssignmentsMsg");
+    el("submissionsPanel").style.display = "none";
+    const list = el("assignmentsList");
+
+    const classId = el("viewAssignClassSelect").value;
+    const term = el("viewAssignTermSelect").value;
+    const session = el("viewAssignSessionInput").value.trim();
+
+    if (!classId || !term || !session) {
+      showMsg("loadAssignmentsMsg", "Please select a class, term, and session.", "error");
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(
+        API_BASE + "/api/assignments?classId=" + classId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("loadAssignmentsMsg", data.error || "Could not load assignments.", "error");
+        return;
+      }
+
+      const assignments = data.assignments || [];
+      if (!assignments.length) {
+        list.innerHTML = `<div class="empty-state">No assignments for this class/term/session yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = assignments.map(a => `
+        <div class="roster-item">
+          <p class="roster-item-name">${a.title}</p>
+          <p class="roster-item-meta">Due ${a.due_date}</p>
+          <a class="refresh-link view-submissions-link" data-id="${a.id}" data-title="${a.title}" style="margin:8px 0 0;">View submissions</a>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".view-submissions-link").forEach(link => {
+        link.addEventListener("click", () => openSubmissions(link.dataset.id, link.dataset.title));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("loadAssignmentsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  });
+
+  async function openSubmissions(assignmentId, title) {
+    clearMsg("submissionsMsg");
+    el("submissionsAssignmentTitle").textContent = title;
+    el("submissionsPanel").style.display = "block";
+    const list = el("submissionsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId + "/submissions", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("submissionsMsg", data.error || "Could not load submissions.", "error");
+        return;
+      }
+
+      const submissions = data.submissions || [];
+      if (!submissions.length) {
+        list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+        return;
+      }
+
+      list.innerHTML = submissions.map(s => `
+        <div class="submission-row" data-student-id="${s.student_id}">
+          <p class="submission-name">${s.name}</p>
+          <span class="submission-status-badge ${s.status}">${s.status.replace("_", " ")}</span>
+          <select class="submission-status-select">
+            <option value="not_submitted"${s.status === "not_submitted" ? " selected" : ""}>Not submitted</option>
+            <option value="submitted"${s.status === "submitted" ? " selected" : ""}>Submitted</option>
+            <option value="late"${s.status === "late" ? " selected" : ""}>Late</option>
+            <option value="graded"${s.status === "graded" ? " selected" : ""}>Graded</option>
+          </select>
+          <input type="text" class="submission-remark-input" placeholder="Remark (optional)" value="${s.remark ? s.remark.replace(/"/g, "&quot;") : ""}">
+          <button type="button" class="submit submission-save-btn" data-student-id="${s.student_id}">Save</button>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".submission-save-btn").forEach(btn => {
+        btn.addEventListener("click", () => saveSubmission(assignmentId, btn));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("submissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function saveSubmission(assignmentId, btn) {
+    const row = btn.closest(".submission-row");
+    const studentId = row.dataset.studentId;
+    const status = row.querySelector(".submission-status-select").value;
+    const remark = row.querySelector(".submission-remark-input").value.trim();
+
+    btn.disabled = true;
+    clearMsg("submissionsMsg");
+
+    try {
+      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId + "/submissions/" + studentId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ status, remark: remark || null })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("submissionsMsg", data.error || "Could not save.", "error");
+        return;
+      }
+
+      const badge = row.querySelector(".submission-status-badge");
+      badge.className = "submission-status-badge " + status;
+      badge.textContent = status.replace("_", " ");
+      showMsg("submissionsMsg", "Saved.", "success");
+    } catch (err) {
+      showMsg("submissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  el("backToAssignmentsList").addEventListener("click", () => {
+    el("submissionsPanel").style.display = "none";
   });
 
   // ---------- Restore session on page load ----------
