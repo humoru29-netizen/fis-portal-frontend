@@ -615,7 +615,7 @@
     margin: 0 0 14px;
   }
 
-  .pin-mode-btn {
+  .pin-mode-btn, .pin-scope-btn {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -627,11 +627,11 @@
     cursor: pointer;
   }
 
-  .pin-mode-btn:last-child {
+  .pin-mode-btn:last-child, .pin-scope-btn:last-child {
     border-right: none;
   }
 
-  .pin-mode-btn.active {
+  .pin-mode-btn.active, .pin-scope-btn.active {
     background: var(--maroon);
     color: #fff;
   }
@@ -1044,7 +1044,13 @@
             </div>
 
             <div id="pinModeClass" style="display:none;">
-              <p class="field-note">Generates a PIN for every student currently listed above in "View students in class". Select a class there first.</p>
+              <p class="field-note">Uses the class currently selected above in "View students in class".</p>
+
+              <div class="roster-subnav" id="pinScopeToggle">
+                <button class="pin-scope-btn active" data-pinscope="new">New students only</button>
+                <button class="pin-scope-btn" data-pinscope="all">All students</button>
+              </div>
+              <p class="field-note" id="pinScopeNote">Only generates for students who don't already have a PIN for this term/session.</p>
             </div>
 
             <div class="row2">
@@ -1775,6 +1781,21 @@
     });
   });
 
+  let pinScope = "new";
+
+  document.querySelectorAll(".pin-scope-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pin-scope-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      pinScope = btn.dataset.pinscope;
+      el("pinScopeNote").textContent = pinScope === "new"
+        ? "Only generates for students who don't already have a PIN for this term/session."
+        : "Shows every student in the class. Those who already have a PIN for this term/session keep it — only students without one get a new PIN.";
+      clearMsg("pinGenMsg");
+      el("pinResultBox").style.display = "none";
+    });
+  });
+
   // ---------- Roster: generate student PIN (single or whole class) ----------
   el("generatePinBtn").addEventListener("click", async () => {
     clearMsg("pinGenMsg");
@@ -1820,14 +1841,47 @@
         el("pinResultBox").style.display = "block";
 
       } else {
-        // Whole class: generate one at a time for every student currently loaded.
-        if (!currentClassStudents.length) {
-          showMsg("pinGenMsg", "No students loaded. Select a class in \"View students in class\" above first.", "error");
+        // Whole class: check who already has a PIN for this term/session first.
+        const classId = el("viewClassSelect").value;
+        if (!classId) {
+          showMsg("pinGenMsg", "Select a class in \"View students in class\" above first.", "error");
+          return;
+        }
+
+        const statusRes = await fetch(
+          API_BASE + "/api/classes/" + classId + "/pin-status?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+          { method: "GET", headers: authHeaders() }
+        );
+        const statusData = await statusRes.json();
+
+        if (!statusRes.ok) {
+          showMsg("pinGenMsg", statusData.error || "Could not check existing PINs.", "error");
+          return;
+        }
+
+        const allStudents = statusData.students || [];
+        if (!allStudents.length) {
+          showMsg("pinGenMsg", "No students in this class.", "error");
+          return;
+        }
+
+        // "New students only" hides already-assigned students entirely.
+        // "All students" shows everyone, but skips generating for those who already have one.
+        const toGenerate = allStudents.filter(s => !s.has_pin);
+        const displayList = pinScope === "new" ? toGenerate : allStudents;
+
+        if (pinScope === "new" && !toGenerate.length) {
+          showMsg("pinGenMsg", "Every student already has a PIN for this term/session.", "success");
+          el("pinResultBox").style.display = "none";
           return;
         }
 
         const rows = [];
-        for (const s of currentClassStudents) {
+        for (const s of displayList) {
+          if (s.has_pin) {
+            rows.push({ name: s.name, admissionNo: s.admission_no, pin: null, alreadyAssigned: true });
+            continue;
+          }
           try {
             const res = await fetch(API_BASE + "/api/students/" + s.id + "/pin", {
               method: "POST",
@@ -1846,19 +1900,21 @@
           }
         }
 
-        const failCount = rows.filter(r => !r.pin).length;
-        if (failCount) {
-          showMsg("pinGenMsg", failCount + " of " + rows.length + " could not be generated.", "error");
-        } else {
-          showMsg("pinGenMsg", "Generated PINs for all " + rows.length + " student(s).", "success");
-        }
+        const newCount = rows.filter(r => r.pin).length;
+        const skippedCount = rows.filter(r => r.alreadyAssigned).length;
+        const failCount = rows.filter(r => !r.pin && !r.alreadyAssigned).length;
+
+        let summary = "Generated " + newCount + " new PIN(s).";
+        if (skippedCount) summary += " " + skippedCount + " already had one.";
+        if (failCount) summary += " " + failCount + " failed.";
+        showMsg("pinGenMsg", summary, failCount ? "error" : "success");
 
         el("pinResultBox").innerHTML =
           `<p class="pin-detail" style="margin-bottom:8px;">${term} · ${session}</p>` +
           rows.map(r => `
             <div class="pin-result-row">
               <span class="pin-result-name">${r.name} (${r.admissionNo})</span>
-              <span class="pin-result-value">${r.pin ? r.pin : "—"}</span>
+              <span class="pin-result-value">${r.alreadyAssigned ? "Already assigned" : (r.pin ? r.pin : "—")}</span>
             </div>
           `).join("");
         el("pinResultBox").style.display = "block";
