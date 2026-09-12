@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Faith International School, Itobe — Portal Login</title>
+<title>Faith International School, Itobe — Portal</title>
 <style>
   :root {
     --maroon: #6E1423;
@@ -73,7 +73,7 @@
 
   main {
     width: 100%;
-    max-width: 420px;
+    max-width: 460px;
     padding: 28px 20px 60px;
     flex: 1;
   }
@@ -225,6 +225,7 @@
     display: block;
   }
 
+  /* ===== Simple (non-admin) dashboard ===== */
   .dashboard {
     display: none;
     padding: 30px 22px;
@@ -256,6 +257,197 @@
     cursor: pointer;
   }
 
+  /* ===== Admin dashboard ===== */
+  .admin-shell {
+    display: none;
+    width: 100%;
+  }
+
+  .admin-shell.active {
+    display: block;
+  }
+
+  .admin-top {
+    background: var(--maroon);
+    background-image: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+    color: var(--ivory);
+    padding: 20px 18px;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .admin-top .greeting {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    margin: 0 0 2px;
+  }
+
+  .admin-top .role-line {
+    font-size: 12.5px;
+    color: #E9D8C9;
+    margin: 0;
+  }
+
+  .admin-top .signout {
+    margin-top: 14px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: var(--ivory);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+
+  .admin-nav {
+    display: flex;
+    overflow-x: auto;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .admin-nav button {
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .admin-nav button.active {
+    color: var(--maroon);
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .admin-body {
+    padding: 20px 18px 50px;
+  }
+
+  .admin-section {
+    display: none;
+  }
+
+  .admin-section.active {
+    display: block;
+  }
+
+  .admin-section h3 {
+    font-family: Georgia, serif;
+    font-size: 16px;
+    margin: 0 0 4px;
+  }
+
+  .admin-section .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .coming-soon {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 30px 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+
+  .empty-state {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 26px 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+
+  .approval-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .approval-card .name {
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 2px;
+  }
+
+  .approval-card .email {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  .approval-card .requested {
+    font-size: 12.5px;
+    color: var(--charcoal);
+    background: var(--ivory);
+    border-radius: 6px;
+    padding: 6px 9px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .approval-card .grant-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .approval-card .grant-row label {
+    font-size: 12px;
+    margin: 0 0 4px;
+  }
+
+  .approval-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn-approve, .btn-reject {
+    padding: 10px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-approve {
+    background: var(--success-text);
+    color: #fff;
+  }
+
+  .btn-approve:disabled, .btn-reject:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-reject {
+    background: #fff;
+    color: var(--error-text);
+    border: 1px solid var(--error-text);
+  }
+
+  .refresh-link {
+    display: block;
+    text-align: center;
+    font-size: 13px;
+    color: var(--maroon);
+    font-weight: 600;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+
   footer {
     font-size: 12px;
     color: var(--muted);
@@ -265,142 +457,223 @@
 </head>
 <body>
 
-<header class="brand">
-  <div class="crest">FIS</div>
-  <h1>Faith International School, Itobe</h1>
-  <p>Portal Sign In</p>
-</header>
+<!-- ===== LOGIN VIEW ===== -->
+<div id="loginView" style="width:100%; display:flex; flex-direction:column; align-items:center;">
 
-<main>
-  <div class="card">
+  <header class="brand">
+    <div class="crest">FIS</div>
+    <h1>Faith International School, Itobe</h1>
+    <p>Portal Sign In</p>
+  </header>
 
-    <!-- ===== LOGIN TABS ===== -->
-    <div id="loginTabs" class="tabs">
-      <button class="tab active" data-tab="staff">Staff Login</button>
-      <button class="tab" data-tab="student">Student Login</button>
-    </div>
+  <main>
+    <div class="card">
 
-    <!-- ===== STAFF LOGIN PANEL ===== -->
-    <div id="panel-staff" class="panel active">
-      <div id="staffLoginView">
-        <h2>Staff Sign In</h2>
-        <p class="sub">Admins, teachers, and cashier staff sign in here.</p>
+      <!-- ===== LOGIN TABS ===== -->
+      <div id="loginTabs" class="tabs">
+        <button class="tab active" data-tab="staff">Staff Login</button>
+        <button class="tab" data-tab="student">Student Login</button>
+      </div>
 
-        <form id="staffLoginForm">
-          <label for="staffEmail">Email</label>
-          <input type="email" id="staffEmail" required autocomplete="username">
+      <!-- ===== STAFF LOGIN PANEL ===== -->
+      <div id="panel-staff" class="panel active">
+        <div id="staffLoginView">
+          <h2>Staff Sign In</h2>
+          <p class="sub">Admins, teachers, and cashier staff sign in here.</p>
 
-          <label for="staffPassword">Password</label>
-          <input type="password" id="staffPassword" required autocomplete="current-password">
+          <form id="staffLoginForm">
+            <label for="staffEmail">Email</label>
+            <input type="email" id="staffEmail" required autocomplete="username">
+
+            <label for="staffPassword">Password</label>
+            <input type="password" id="staffPassword" required autocomplete="current-password">
+
+            <button type="submit" class="submit">Sign In</button>
+          </form>
+
+          <div id="staffLoginMsg" class="msg"></div>
+
+          <div class="switch-link">
+            New staff member? <a id="showSignup">Request an account</a>
+          </div>
+        </div>
+
+        <!-- ===== STAFF SIGNUP FORM ===== -->
+        <div id="staffSignupView" class="signup-form">
+          <h2>Request a Staff Account</h2>
+          <p class="sub">An administrator will review and approve your request.</p>
+
+          <form id="staffSignupForm">
+            <label for="suName">Full Name</label>
+            <input type="text" id="suName" required>
+
+            <label for="suEmail">Email</label>
+            <input type="email" id="suEmail" required autocomplete="username">
+
+            <label for="suPassword">Password</label>
+            <input type="password" id="suPassword" required minlength="8" autocomplete="new-password">
+
+            <div class="row2">
+              <div>
+                <label for="suRole">Requested Role</label>
+                <select id="suRole" required>
+                  <option value="">Select…</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="cashier">Cashier</option>
+                  <option value="primary_admin">Primary Admin</option>
+                  <option value="secondary_admin">Secondary Admin</option>
+                  <option value="general_admin">General Admin</option>
+                </select>
+              </div>
+              <div>
+                <label for="suLevel">Level</label>
+                <select id="suLevel" required>
+                  <option value="">Select…</option>
+                  <option value="primary">Primary</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="submit">Submit Request</button>
+          </form>
+
+          <div id="staffSignupMsg" class="msg"></div>
+
+          <div class="switch-link">
+            Already have an account? <a id="showLogin">Sign in</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== STUDENT LOGIN PANEL ===== -->
+      <div id="panel-student" class="panel">
+        <h2>Student Sign In</h2>
+        <p class="sub">Sign in with your admission number and term PIN.</p>
+
+        <form id="studentLoginForm">
+          <label for="stuAdm">Admission Number</label>
+          <input type="text" id="stuAdm" placeholder="FISS/2026/0001" required>
+
+          <label for="stuPin">PIN</label>
+          <input type="text" id="stuPin" inputmode="numeric" required>
+
+          <div class="row2">
+            <div>
+              <label for="stuTerm">Term</label>
+              <select id="stuTerm" required>
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="stuSession">Session</label>
+              <input type="text" id="stuSession" placeholder="2026/2027" required>
+            </div>
+          </div>
 
           <button type="submit" class="submit">Sign In</button>
         </form>
 
-        <div id="staffLoginMsg" class="msg"></div>
-
-        <div class="switch-link">
-          New staff member? <a id="showSignup">Request an account</a>
-        </div>
+        <div id="studentLoginMsg" class="msg"></div>
       </div>
 
-      <!-- ===== STAFF SIGNUP FORM ===== -->
-      <div id="staffSignupView" class="signup-form">
-        <h2>Request a Staff Account</h2>
-        <p class="sub">An administrator will review and approve your request.</p>
+    </div>
+  </main>
 
-        <form id="staffSignupForm">
-          <label for="suName">Full Name</label>
-          <input type="text" id="suName" required>
+  <footer>&copy; Faith International School, Itobe</footer>
+</div>
 
-          <label for="suEmail">Email</label>
-          <input type="email" id="suEmail" required autocomplete="username">
+<!-- ===== SIMPLE DASHBOARD (teacher / cashier / student) ===== -->
+<div id="dashboard" class="dashboard">
+  <h2 id="dashGreeting">Welcome</h2>
+  <p id="dashDetail">You are signed in.</p>
+  <button id="logoutBtn">Sign Out</button>
+</div>
 
-          <label for="suPassword">Password</label>
-          <input type="password" id="suPassword" required minlength="8" autocomplete="new-password">
+<!-- ===== ADMIN DASHBOARD ===== -->
+<div id="adminShell" class="admin-shell">
+  <div class="admin-top">
+    <p class="greeting" id="adminGreeting">Welcome, Admin</p>
+    <p class="role-line" id="adminRoleLine">general admin</p>
+    <button class="signout" id="adminLogoutBtn">Sign Out</button>
+  </div>
 
-          <div class="row2">
-            <div>
-              <label for="suRole">Requested Role</label>
-              <select id="suRole" required>
-                <option value="">Select…</option>
-                <option value="teacher">Teacher</option>
-                <option value="cashier">Cashier</option>
-                <option value="primary_admin">Primary Admin</option>
-                <option value="secondary_admin">Secondary Admin</option>
-                <option value="general_admin">General Admin</option>
-              </select>
-            </div>
-            <div>
-              <label for="suLevel">Level</label>
-              <select id="suLevel" required>
-                <option value="">Select…</option>
-                <option value="primary">Primary</option>
-                <option value="secondary">Secondary</option>
-                <option value="both">Both</option>
-              </select>
-            </div>
-          </div>
+  <div class="admin-nav" id="adminNav">
+    <button class="active" data-section="approvals">Approvals</button>
+    <button data-section="attendance">Attendance</button>
+    <button data-section="assignments">Assignments</button>
+    <button data-section="results">Results</button>
+    <button data-section="admissions">Admissions</button>
+    <button data-section="fees">Fees</button>
+    <button data-section="roster">Roster</button>
+    <button data-section="announcements">Announcements</button>
+  </div>
 
-          <button type="submit" class="submit">Submit Request</button>
-        </form>
+  <div class="admin-body">
 
-        <div id="staffSignupMsg" class="msg"></div>
-
-        <div class="switch-link">
-          Already have an account? <a id="showLogin">Sign in</a>
-        </div>
-      </div>
+    <!-- ---------- APPROVALS ---------- -->
+    <div id="section-approvals" class="admin-section active">
+      <h3>Pending Staff Accounts</h3>
+      <p class="sub">Review requests and grant a role before someone can sign in.</p>
+      <a class="refresh-link" id="refreshApprovals">Refresh list</a>
+      <div id="approvalsMsg" class="msg"></div>
+      <div id="approvalsList"></div>
     </div>
 
-    <!-- ===== STUDENT LOGIN PANEL ===== -->
-    <div id="panel-student" class="panel">
-      <h2>Student Sign In</h2>
-      <p class="sub">Sign in with your admission number and term PIN.</p>
-
-      <form id="studentLoginForm">
-        <label for="stuAdm">Admission Number</label>
-        <input type="text" id="stuAdm" placeholder="FISS/2026/0001" required>
-
-        <label for="stuPin">PIN</label>
-        <input type="text" id="stuPin" inputmode="numeric" required>
-
-        <div class="row2">
-          <div>
-            <label for="stuTerm">Term</label>
-            <select id="stuTerm" required>
-              <option value="">Select…</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
-          </div>
-          <div>
-            <label for="stuSession">Session</label>
-            <input type="text" id="stuSession" placeholder="2026/2027" required>
-          </div>
-        </div>
-
-        <button type="submit" class="submit">Sign In</button>
-      </form>
-
-      <div id="studentLoginMsg" class="msg"></div>
+    <!-- ---------- PLACEHOLDER SECTIONS ---------- -->
+    <div id="section-attendance" class="admin-section">
+      <h3>Attendance</h3>
+      <p class="sub">Mark and review class attendance.</p>
+      <div class="coming-soon">This section is being built next.</div>
     </div>
 
-    <!-- ===== POST-LOGIN DASHBOARD (placeholder) ===== -->
-    <div id="dashboard" class="dashboard">
-      <h2 id="dashGreeting">Welcome</h2>
-      <p id="dashDetail">You are signed in.</p>
-      <button id="logoutBtn">Sign Out</button>
+    <div id="section-assignments" class="admin-section">
+      <h3>Assignments</h3>
+      <p class="sub">Post and track student assignments.</p>
+      <div class="coming-soon">This section is being built next.</div>
+    </div>
+
+    <div id="section-results" class="admin-section">
+      <h3>Results</h3>
+      <p class="sub">Enter and publish student results.</p>
+      <div class="coming-soon">This section is being built next.</div>
+    </div>
+
+    <div id="section-admissions" class="admin-section">
+      <h3>Admissions</h3>
+      <p class="sub">Review and process new admission requests.</p>
+      <div class="coming-soon">This section is being built next.</div>
+    </div>
+
+    <div id="section-fees" class="admin-section">
+      <h3>Fees</h3>
+      <p class="sub">Track cashier records and fee payments.</p>
+      <div class="coming-soon">This section is being built next.</div>
+    </div>
+
+    <div id="section-roster" class="admin-section">
+      <h3>Roster</h3>
+      <p class="sub">Manage class rosters and student records.</p>
+      <div class="coming-soon">This section is being built next.</div>
+    </div>
+
+    <div id="section-announcements" class="admin-section">
+      <h3>Announcements</h3>
+      <p class="sub">Post school-wide or class announcements.</p>
+      <div class="coming-soon">This section is being built next.</div>
     </div>
 
   </div>
-</main>
-
-<footer>&copy; Faith International School, Itobe</footer>
+</div>
 
 <script>
   // Point this at your live Worker.
   const API_BASE = "https://fis-portal-d1-worker.itobe.workers.dev";
+  const ADMIN_ROLES = ["general_admin", "primary_admin", "secondary_admin"];
 
   const el = id => document.getElementById(id);
 
@@ -414,6 +687,11 @@
     const box = el(elemId);
     box.textContent = "";
     box.className = "msg";
+  }
+
+  function authHeaders() {
+    const token = localStorage.getItem("fis_token");
+    return token ? { "Authorization": "Bearer " + token } : {};
   }
 
   // ---------- Tab switching (Staff / Student) ----------
@@ -449,9 +727,19 @@
     localStorage.removeItem("fis_profile");
   }
 
-  function showDashboard(type, profile) {
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    el("loginTabs").style.display = "none";
+  function isAdminRole(role) {
+    return ADMIN_ROLES.includes(role);
+  }
+
+  function showLoginView() {
+    el("loginView").style.display = "flex";
+    el("dashboard").classList.remove("active");
+    el("adminShell").classList.remove("active");
+  }
+
+  function showSimpleDashboard(type, profile) {
+    el("loginView").style.display = "none";
+    el("adminShell").classList.remove("active");
     el("dashboard").classList.add("active");
 
     if (type === "staff") {
@@ -460,6 +748,25 @@
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+    }
+  }
+
+  function showAdminDashboard(profile) {
+    el("loginView").style.display = "none";
+    el("dashboard").classList.remove("active");
+    el("adminShell").classList.add("active");
+
+    el("adminGreeting").textContent = "Welcome, " + profile.name;
+    el("adminRoleLine").textContent = profile.role.replace(/_/g, " ") + (profile.level ? " · " + profile.level : "");
+
+    loadApprovals();
+  }
+
+  function showDashboard(type, profile) {
+    if (type === "staff" && isAdminRole(profile.role)) {
+      showAdminDashboard(profile);
+    } else {
+      showSimpleDashboard(type, profile);
     }
   }
 
@@ -564,11 +871,137 @@
     }
   });
 
-  // ---------- Logout ----------
-  el("logoutBtn").addEventListener("click", () => {
+  // ---------- Logout (both simple + admin) ----------
+  function doLogout() {
     clearSession();
-    location.reload();
+    showLoginView();
+  }
+  el("logoutBtn").addEventListener("click", doLogout);
+  el("adminLogoutBtn").addEventListener("click", doLogout);
+
+  // ---------- Admin nav switching ----------
+  document.querySelectorAll("#adminNav button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#adminNav button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+      btn.classList.add("active");
+      el("section-" + btn.dataset.section).classList.add("active");
+    });
   });
+
+  // ---------- Approvals: load list ----------
+  const ROLE_OPTIONS = ["teacher", "cashier", "primary_admin", "secondary_admin", "general_admin"];
+  const LEVEL_OPTIONS = ["primary", "secondary", "both"];
+
+  function roleSelectHtml(id, selected) {
+    return `<select id="${id}">` +
+      ROLE_OPTIONS.map(r => `<option value="${r}"${r === selected ? " selected" : ""}>${r.replace(/_/g, " ")}</option>`).join("") +
+      `</select>`;
+  }
+
+  function levelSelectHtml(id, selected) {
+    return `<select id="${id}">` +
+      LEVEL_OPTIONS.map(l => `<option value="${l}"${l === selected ? " selected" : ""}>${l}</option>`).join("") +
+      `</select>`;
+  }
+
+  async function loadApprovals() {
+    clearMsg("approvalsMsg");
+    const list = el("approvalsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/approvals", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("approvalsMsg", data.error || "Could not load approvals.", "error");
+        return;
+      }
+
+      const requests = data.requests || [];
+      if (!requests.length) {
+        list.innerHTML = `<div class="empty-state">No pending requests right now.</div>`;
+        return;
+      }
+
+      list.innerHTML = requests.map(r => {
+        const roleSelId = "role_" + r.id;
+        const levelSelId = "level_" + r.id;
+        return `
+          <div class="approval-card" data-id="${r.id}">
+            <p class="name">${r.name}</p>
+            <p class="email">${r.email}</p>
+            <div class="requested">Requested: ${(r.requested_role || "").replace(/_/g, " ")} · ${r.requested_level || ""}</div>
+            <div class="grant-row">
+              <div>
+                <label>Grant role</label>
+                ${roleSelectHtml(roleSelId, r.requested_role)}
+              </div>
+              <div>
+                <label>Level</label>
+                ${levelSelectHtml(levelSelId, r.requested_level)}
+              </div>
+            </div>
+            <div class="approval-actions">
+              <button class="btn-approve" data-action="approve" data-id="${r.id}">Approve</button>
+              <button class="btn-reject" data-action="reject" data-id="${r.id}">Reject</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      list.querySelectorAll("button[data-action]").forEach(btn => {
+        btn.addEventListener("click", () => handleApprovalAction(btn));
+      });
+
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("approvalsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function handleApprovalAction(btn) {
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    const card = btn.closest(".approval-card");
+    const buttons = card.querySelectorAll("button");
+    buttons.forEach(b => b.disabled = true);
+    clearMsg("approvalsMsg");
+
+    const body = { action };
+    if (action === "approve") {
+      body.role = el("role_" + id).value;
+      body.level = el("level_" + id).value;
+    }
+
+    try {
+      const res = await fetch(API_BASE + "/api/approvals/" + id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("approvalsMsg", data.error || "Action failed.", "error");
+        buttons.forEach(b => b.disabled = false);
+        return;
+      }
+
+      showMsg("approvalsMsg", data.message || "Done.", "success");
+      loadApprovals();
+    } catch (err) {
+      showMsg("approvalsMsg", "Could not reach the portal server. Check your connection.", "error");
+      buttons.forEach(b => b.disabled = false);
+    }
+  }
+
+  el("refreshApprovals").addEventListener("click", loadApprovals);
 
   // ---------- Restore session on page load ----------
   (function restoreSession() {
