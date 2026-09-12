@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faith International School, Itobe — Portal Login</title>
+<style>
+  :root {
+    --maroon: #6E1423;
+    --maroon-dark: #4E0E19;
+    --gold: #C9A227;
+    --ivory: #FBF8F2;
+    --charcoal: #2A2420;
+    --border: #E4CFC9;
+    --muted: #8A7A72;
+    --error-bg: #FBEAEA;
+    --error-text: #8A1F1F;
+    --success-bg: #EAF3EA;
+    --success-text: #24602C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--ivory);
+    color: var(--charcoal);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header.brand {
+    width: 100%;
+    background: var(--maroon);
+    background-image: linear-gradient(180deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+    color: var(--ivory);
+    padding: 28px 20px 22px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  header.brand .crest {
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--maroon-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  header.brand h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin: 0 0 2px;
+    letter-spacing: 0.2px;
+  }
+
+  header.brand p {
+    margin: 0;
+    font-size: 13px;
+    color: #E9D8C9;
+  }
+
+  main {
+    width: 100%;
+    max-width: 420px;
+    padding: 28px 20px 60px;
+    flex: 1;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 14px 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--ivory);
+    border: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab.active {
+    color: var(--maroon);
+    background: #fff;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .panel {
+    display: none;
+    padding: 26px 22px 22px;
+  }
+
+  .panel.active {
+    display: block;
+  }
+
+  .panel h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    margin: 0 0 4px;
+  }
+
+  .panel .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 14px 0 6px;
+  }
+
+  label:first-of-type { margin-top: 0; }
+
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 15px;
+    background: var(--ivory);
+    color: var(--charcoal);
+  }
+
+  input:focus, select:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+    background: #fff;
+  }
+
+  .row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  button.submit {
+    width: 100%;
+    margin-top: 22px;
+    padding: 13px;
+    background: var(--maroon);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.submit:disabled {
+    background: #B99B9F;
+    cursor: not-allowed;
+  }
+
+  button.submit:not(:disabled):active {
+    background: var(--maroon-dark);
+  }
+
+  .msg {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    display: none;
+  }
+
+  .msg.error {
+    display: block;
+    background: var(--error-bg);
+    color: var(--error-text);
+  }
+
+  .msg.success {
+    display: block;
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  .switch-link {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .switch-link a {
+    color: var(--maroon);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .signup-form {
+    display: none;
+  }
+
+  .signup-form.active {
+    display: block;
+  }
+
+  .dashboard {
+    display: none;
+    padding: 30px 22px;
+    text-align: center;
+  }
+
+  .dashboard.active {
+    display: block;
+  }
+
+  .dashboard h2 {
+    font-family: Georgia, serif;
+    margin: 0 0 6px;
+  }
+
+  .dashboard p {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 22px;
+  }
+
+  .dashboard button {
+    background: var(--ivory);
+    border: 1px solid var(--border);
+    color: var(--charcoal);
+    padding: 10px 18px;
+    border-radius: 7px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  footer {
+    font-size: 12px;
+    color: var(--muted);
+    padding-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="crest">FIS</div>
+  <h1>Faith International School, Itobe</h1>
+  <p>Portal Sign In</p>
+</header>
+
+<main>
+  <div class="card">
+
+    <!-- ===== LOGIN TABS ===== -->
+    <div id="loginTabs" class="tabs">
+      <button class="tab active" data-tab="staff">Staff Login</button>
+      <button class="tab" data-tab="student">Student Login</button>
+    </div>
+
+    <!-- ===== STAFF LOGIN PANEL ===== -->
+    <div id="panel-staff" class="panel active">
+      <div id="staffLoginView">
+        <h2>Staff Sign In</h2>
+        <p class="sub">Admins, teachers, and cashier staff sign in here.</p>
+
+        <form id="staffLoginForm">
+          <label for="staffEmail">Email</label>
+          <input type="email" id="staffEmail" required autocomplete="username">
+
+          <label for="staffPassword">Password</label>
+          <input type="password" id="staffPassword" required autocomplete="current-password">
+
+          <button type="submit" class="submit">Sign In</button>
+        </form>
+
+        <div id="staffLoginMsg" class="msg"></div>
+
+        <div class="switch-link">
+          New staff member? <a id="showSignup">Request an account</a>
+        </div>
+      </div>
+
+      <!-- ===== STAFF SIGNUP FORM ===== -->
+      <div id="staffSignupView" class="signup-form">
+        <h2>Request a Staff Account</h2>
+        <p class="sub">An administrator will review and approve your request.</p>
+
+        <form id="staffSignupForm">
+          <label for="suName">Full Name</label>
+          <input type="text" id="suName" required>
+
+          <label for="suEmail">Email</label>
+          <input type="email" id="suEmail" required autocomplete="username">
+
+          <label for="suPassword">Password</label>
+          <input type="password" id="suPassword" required minlength="8" autocomplete="new-password">
+
+          <div class="row2">
+            <div>
+              <label for="suRole">Requested Role</label>
+              <select id="suRole" required>
+                <option value="">Select…</option>
+                <option value="teacher">Teacher</option>
+                <option value="cashier">Cashier</option>
+                <option value="primary_admin">Primary Admin</option>
+                <option value="secondary_admin">Secondary Admin</option>
+                <option value="general_admin">General Admin</option>
+              </select>
+            </div>
+            <div>
+              <label for="suLevel">Level</label>
+              <select id="suLevel" required>
+                <option value="">Select…</option>
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="submit">Submit Request</button>
+        </form>
+
+        <div id="staffSignupMsg" class="msg"></div>
+
+        <div class="switch-link">
+          Already have an account? <a id="showLogin">Sign in</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STUDENT LOGIN PANEL ===== -->
+    <div id="panel-student" class="panel">
+      <h2>Student Sign In</h2>
+      <p class="sub">Sign in with your admission number and term PIN.</p>
+
+      <form id="studentLoginForm">
+        <label for="stuAdm">Admission Number</label>
+        <input type="text" id="stuAdm" placeholder="FISS/2026/0001" required>
+
+        <label for="stuPin">PIN</label>
+        <input type="text" id="stuPin" inputmode="numeric" required>
+
+        <div class="row2">
+          <div>
+            <label for="stuTerm">Term</label>
+            <select id="stuTerm" required>
+              <option value="">Select…</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+          </div>
+          <div>
+            <label for="stuSession">Session</label>
+            <input type="text" id="stuSession" placeholder="2026/2027" required>
+          </div>
+        </div>
+
+        <button type="submit" class="submit">Sign In</button>
+      </form>
+
+      <div id="studentLoginMsg" class="msg"></div>
+    </div>
+
+    <!-- ===== POST-LOGIN DASHBOARD (placeholder) ===== -->
+    <div id="dashboard" class="dashboard">
+      <h2 id="dashGreeting">Welcome</h2>
+      <p id="dashDetail">You are signed in.</p>
+      <button id="logoutBtn">Sign Out</button>
+    </div>
+
+  </div>
+</main>
+
+<footer>&copy; Faith International School, Itobe</footer>
+
+<script>
+  // Point this at your live Worker.
+  const API_BASE = "https://fis-portal-d1-worker.itobe.workers.dev";
+
+  const el = id => document.getElementById(id);
+
+  function showMsg(elemId, text, type) {
+    const box = el(elemId);
+    box.textContent = text;
+    box.className = "msg " + type;
+  }
+
+  function clearMsg(elemId) {
+    const box = el(elemId);
+    box.textContent = "";
+    box.className = "msg";
+  }
+
+  // ---------- Tab switching (Staff / Student) ----------
+  document.querySelectorAll("#loginTabs .tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#loginTabs .tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- Staff login <-> signup switch ----------
+  el("showSignup").addEventListener("click", () => {
+    el("staffLoginView").style.display = "none";
+    el("staffSignupView").classList.add("active");
+  });
+  el("showLogin").addEventListener("click", () => {
+    el("staffSignupView").classList.remove("active");
+    el("staffLoginView").style.display = "block";
+  });
+
+  // ---------- Session storage helpers ----------
+  function saveSession(token, type, profile) {
+    localStorage.setItem("fis_token", token);
+    localStorage.setItem("fis_session_type", type);
+    localStorage.setItem("fis_profile", JSON.stringify(profile));
+  }
+
+  function clearSession() {
+    localStorage.removeItem("fis_token");
+    localStorage.removeItem("fis_session_type");
+    localStorage.removeItem("fis_profile");
+  }
+
+  function showDashboard(type, profile) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    el("loginTabs").style.display = "none";
+    el("dashboard").classList.add("active");
+
+    if (type === "staff") {
+      el("dashGreeting").textContent = "Welcome, " + profile.name;
+      el("dashDetail").textContent = "Signed in as " + profile.role.replace(/_/g, " ") + (profile.level ? " (" + profile.level + ")" : "");
+    } else {
+      el("dashGreeting").textContent = "Welcome, " + profile.name;
+      el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+    }
+  }
+
+  // ---------- Staff login ----------
+  el("staffLoginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("staffLoginMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: el("staffEmail").value.trim(),
+          password: el("staffPassword").value
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("staffLoginMsg", data.error || "Sign in failed.", "error");
+        return;
+      }
+
+      saveSession(data.token, "staff", data.user);
+      showDashboard("staff", data.user);
+    } catch (err) {
+      showMsg("staffLoginMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Staff signup ----------
+  el("staffSignupForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("staffSignupMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: el("suName").value.trim(),
+          email: el("suEmail").value.trim(),
+          password: el("suPassword").value,
+          requestedRole: el("suRole").value,
+          requestedLevel: el("suLevel").value
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("staffSignupMsg", data.error || "Request failed.", "error");
+        return;
+      }
+
+      showMsg("staffSignupMsg", data.message || "Request submitted.", "success");
+      e.target.reset();
+    } catch (err) {
+      showMsg("staffSignupMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Student login ----------
+  el("studentLoginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("studentLoginMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/student-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admissionNo: el("stuAdm").value.trim(),
+          pin: el("stuPin").value.trim(),
+          term: el("stuTerm").value,
+          session: el("stuSession").value.trim()
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("studentLoginMsg", data.error || "Sign in failed.", "error");
+        return;
+      }
+
+      saveSession(data.token, "student", data.student);
+      showDashboard("student", data.student);
+    } catch (err) {
+      showMsg("studentLoginMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Logout ----------
+  el("logoutBtn").addEventListener("click", () => {
+    clearSession();
+    location.reload();
+  });
+
+  // ---------- Restore session on page load ----------
+  (function restoreSession() {
+    const token = localStorage.getItem("fis_token");
+    const type = localStorage.getItem("fis_session_type");
+    const profile = localStorage.getItem("fis_profile");
+    if (token && type && profile) {
+      showDashboard(type, JSON.parse(profile));
+    }
+  })();
+</script>
+
+</body>
+</html>
