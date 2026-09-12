@@ -683,6 +683,68 @@
     color: var(--success-text);
   }
 
+  .attendance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+
+  .attendance-row-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .attendance-status-btns {
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .att-status-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--ivory);
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .att-status-btn.active.present {
+    background: var(--success-text);
+    border-color: var(--success-text);
+    color: #fff;
+  }
+
+  .att-status-btn.active.absent {
+    background: var(--error-text);
+    border-color: var(--error-text);
+    color: #fff;
+  }
+
+  .att-status-btn.active.late {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--maroon-dark);
+  }
+
+  .att-status-btn.active.excused {
+    background: var(--muted);
+    border-color: var(--muted);
+    color: #fff;
+  }
+
   .refresh-link {
     display: block;
     text-align: center;
@@ -927,8 +989,42 @@
 
       <div id="section-attendance" class="admin-section">
         <h3>Attendance</h3>
-        <p class="sub">Mark and review class attendance.</p>
-        <div class="coming-soon">This section is being built next.</div>
+        <p class="sub">Mark and review daily attendance for a class.</p>
+
+        <label for="attClassSelect">Class</label>
+        <select id="attClassSelect">
+          <option value="">Select a class…</option>
+        </select>
+
+        <div class="row2">
+          <div>
+            <label for="attDateInput">Date</label>
+            <input type="date" id="attDateInput">
+          </div>
+          <div>
+            <label for="attTermSelect">Term</label>
+            <select id="attTermSelect">
+              <option value="">Select…</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="attSessionInput">Session</label>
+        <input type="text" id="attSessionInput" placeholder="2026/2027">
+
+        <button type="button" id="loadAttendanceBtn" class="submit">Load Class</button>
+        <div id="attendanceLoadMsg" class="msg"></div>
+
+        <div id="attendanceMarkArea" style="display:none; margin-top:20px;">
+          <a class="refresh-link" id="markAllPresent">Mark all present</a>
+          <div id="attendanceStudentList"></div>
+
+          <button type="button" id="saveAttendanceBtn" class="submit">Save Attendance</button>
+          <div id="attendanceSaveMsg" class="msg"></div>
+        </div>
       </div>
 
       <div id="section-assignments" class="admin-section">
@@ -1245,6 +1341,10 @@
       populateClassDropdowns();
       loadSubjects();
     }
+    // If the attendance panel is open, refresh its class dropdown against the new level.
+    if (el("section-attendance").classList.contains("active")) {
+      populateAttClassSelect();
+    }
   }
 
   function showAdminDashboard(profile) {
@@ -1404,6 +1504,12 @@
       populateClassDropdowns();
       loadSubjects();
       populateAssignClassSelect();
+    }
+    if (toolName === "attendance") {
+      populateAttClassSelect();
+      if (!el("attDateInput").value) {
+        el("attDateInput").value = todayLocalISODate();
+      }
     }
   }
 
@@ -2116,6 +2222,164 @@
       loadClassSubjects(classId);
     } catch (err) {
       showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Attendance ----------
+  function todayLocalISODate() {
+    const d = new Date();
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  async function populateAttClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("attClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  let attendanceState = {}; // studentId -> status
+
+  function renderAttendanceList(students) {
+    const list = el("attendanceStudentList");
+    list.innerHTML = students.map(s => {
+      const status = attendanceState[s.student_id] || "present";
+      return `
+        <div class="attendance-row" data-student-id="${s.student_id}">
+          <p class="attendance-row-name">${s.student_name}</p>
+          <div class="attendance-status-btns">
+            <button type="button" class="att-status-btn${status === "present" ? " active present" : ""}" data-status="present">P</button>
+            <button type="button" class="att-status-btn${status === "absent" ? " active absent" : ""}" data-status="absent">A</button>
+            <button type="button" class="att-status-btn${status === "late" ? " active late" : ""}" data-status="late">L</button>
+            <button type="button" class="att-status-btn${status === "excused" ? " active excused" : ""}" data-status="excused">E</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    list.querySelectorAll(".attendance-row").forEach(row => {
+      const studentId = row.dataset.studentId;
+      row.querySelectorAll(".att-status-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          attendanceState[studentId] = btn.dataset.status;
+          row.querySelectorAll(".att-status-btn").forEach(b => {
+            b.classList.remove("active", "present", "absent", "late", "excused");
+          });
+          btn.classList.add("active", btn.dataset.status);
+        });
+      });
+    });
+  }
+
+  el("loadAttendanceBtn").addEventListener("click", async () => {
+    clearMsg("attendanceLoadMsg");
+    el("attendanceMarkArea").style.display = "none";
+    el("attendanceSaveMsg").className = "msg";
+
+    const classId = el("attClassSelect").value;
+    const date = el("attDateInput").value;
+    const term = el("attTermSelect").value;
+    const session = el("attSessionInput").value.trim();
+
+    if (!classId || !date || !term || !session) {
+      showMsg("attendanceLoadMsg", "Please select a class, date, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("loadAttendanceBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/attendance?classId=" + classId + "&date=" + date, {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("attendanceLoadMsg", data.error || "Could not load attendance.", "error");
+        return;
+      }
+
+      const students = data.students || [];
+      if (!students.length) {
+        showMsg("attendanceLoadMsg", "No students in this class.", "error");
+        return;
+      }
+
+      // Reset state fresh for this class/date load. Existing marks come back
+      // as a status string; unmarked students come back with status null.
+      attendanceState = {};
+      students.forEach(s => {
+        attendanceState[s.student_id] = s.status || "present";
+      });
+
+      renderAttendanceList(students);
+      el("attendanceMarkArea").style.display = "block";
+    } catch (err) {
+      showMsg("attendanceLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  el("markAllPresent").addEventListener("click", () => {
+    document.querySelectorAll("#attendanceStudentList .attendance-row").forEach(row => {
+      const studentId = row.dataset.studentId;
+      attendanceState[studentId] = "present";
+      row.querySelectorAll(".att-status-btn").forEach(b => {
+        b.classList.remove("active", "present", "absent", "late", "excused");
+      });
+      const presentBtn = row.querySelector('.att-status-btn[data-status="present"]');
+      presentBtn.classList.add("active", "present");
+    });
+  });
+
+  el("saveAttendanceBtn").addEventListener("click", async () => {
+    clearMsg("attendanceSaveMsg");
+
+    const classId = el("attClassSelect").value;
+    const date = el("attDateInput").value;
+    const term = el("attTermSelect").value;
+    const session = el("attSessionInput").value.trim();
+
+    const records = Object.keys(attendanceState).map(studentId => ({
+      studentId,
+      status: attendanceState[studentId]
+    }));
+
+    if (!records.length) {
+      showMsg("attendanceSaveMsg", "Nothing to save. Load a class first.", "error");
+      return;
+    }
+
+    const btn = el("saveAttendanceBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ classId, date, term, session, records })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("attendanceSaveMsg", data.error || "Could not save attendance.", "error");
+        return;
+      }
+
+      showMsg("attendanceSaveMsg", data.message || "Attendance saved.", "success");
+    } catch (err) {
+      showMsg("attendanceSaveMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
