@@ -438,6 +438,51 @@
     border: 1px solid var(--error-text);
   }
 
+  .level-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .level-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+
+  .level-card-title {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    margin: 0 0 10px;
+  }
+
+  .level-card-count {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--maroon);
+    margin: 0;
+  }
+
+  .level-card-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  .level-card-btn {
+    width: 100%;
+    padding: 9px;
+    border-radius: 7px;
+    border: 1px solid var(--maroon);
+    background: var(--ivory);
+    color: var(--maroon);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
   .refresh-link {
     display: block;
     text-align: center;
@@ -603,7 +648,8 @@
   </div>
 
   <div class="admin-nav" id="adminNav">
-    <button class="active" data-section="approvals">Approvals</button>
+    <button class="active" data-section="overview">Overview</button>
+    <button data-section="approvals">Approvals</button>
     <button data-section="attendance">Attendance</button>
     <button data-section="assignments">Assignments</button>
     <button data-section="results">Results</button>
@@ -615,10 +661,34 @@
 
   <div class="admin-body">
 
+    <!-- ---------- OVERVIEW ---------- -->
+    <div id="section-overview" class="admin-section active">
+      <h3>Overview</h3>
+      <p class="sub">Jump into either level's space.</p>
+      <div class="level-cards">
+        <div class="level-card">
+          <p class="level-card-title">Primary Admin Space</p>
+          <p class="level-card-count" id="overviewPrimaryCount">–</p>
+          <p class="level-card-label">pending approvals</p>
+          <button class="level-card-btn" data-level="primary">View Primary</button>
+        </div>
+        <div class="level-card">
+          <p class="level-card-title">Secondary Admin Space</p>
+          <p class="level-card-count" id="overviewSecondaryCount">–</p>
+          <p class="level-card-label">pending approvals</p>
+          <button class="level-card-btn" data-level="secondary">View Secondary</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ---------- APPROVALS ---------- -->
-    <div id="section-approvals" class="admin-section active">
+    <div id="section-approvals" class="admin-section">
       <h3>Pending Staff Accounts</h3>
-      <p class="sub">Review requests and grant a role before someone can sign in.</p>
+      <p class="sub" id="approvalsSub">Review requests and grant a role before someone can sign in.</p>
+      <div id="approvalsFilterBar" style="display:none; margin-bottom:14px;">
+        <span id="approvalsFilterLabel" style="font-size:12.5px; color:var(--muted);"></span>
+        <a id="approvalsClearFilter" style="font-size:12.5px; color:var(--maroon); font-weight:600; cursor:pointer; margin-left:8px;">Show all levels</a>
+      </div>
       <a class="refresh-link" id="refreshApprovals">Refresh list</a>
       <div id="approvalsMsg" class="msg"></div>
       <div id="approvalsList"></div>
@@ -759,7 +829,7 @@
     el("adminGreeting").textContent = "Welcome, " + profile.name;
     el("adminRoleLine").textContent = profile.role.replace(/_/g, " ") + (profile.level ? " · " + profile.level : "");
 
-    loadApprovals();
+    loadOverviewCounts();
   }
 
   function showDashboard(type, profile) {
@@ -880,13 +950,59 @@
   el("adminLogoutBtn").addEventListener("click", doLogout);
 
   // ---------- Admin nav switching ----------
+  function switchAdminSection(sectionName) {
+    document.querySelectorAll("#adminNav button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+    const navBtn = document.querySelector('#adminNav button[data-section="' + sectionName + '"]');
+    if (navBtn) navBtn.classList.add("active");
+    el("section-" + sectionName).classList.add("active");
+
+    if (sectionName === "overview") loadOverviewCounts();
+  }
+
   document.querySelectorAll("#adminNav button").forEach(btn => {
+    btn.addEventListener("click", () => switchAdminSection(btn.dataset.section));
+  });
+
+  // ---------- Overview: primary / secondary counts ----------
+  let currentLevelFilter = null;
+
+  async function fetchPendingCount(level) {
+    try {
+      const res = await fetch(API_BASE + "/api/approvals?level=" + level, {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) return "–";
+      return (data.requests || []).length;
+    } catch (err) {
+      return "–";
+    }
+  }
+
+  async function loadOverviewCounts() {
+    el("overviewPrimaryCount").textContent = "…";
+    el("overviewSecondaryCount").textContent = "…";
+    const [primaryCount, secondaryCount] = await Promise.all([
+      fetchPendingCount("primary"),
+      fetchPendingCount("secondary")
+    ]);
+    el("overviewPrimaryCount").textContent = primaryCount;
+    el("overviewSecondaryCount").textContent = secondaryCount;
+  }
+
+  document.querySelectorAll(".level-card-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#adminNav button").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
-      btn.classList.add("active");
-      el("section-" + btn.dataset.section).classList.add("active");
+      currentLevelFilter = btn.dataset.level;
+      switchAdminSection("approvals");
+      loadApprovals();
     });
+  });
+
+  el("approvalsClearFilter").addEventListener("click", () => {
+    currentLevelFilter = null;
+    loadApprovals();
   });
 
   // ---------- Approvals: load list ----------
@@ -910,8 +1026,21 @@
     const list = el("approvalsList");
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
+    if (currentLevelFilter) {
+      el("approvalsFilterBar").style.display = "block";
+      el("approvalsFilterLabel").textContent = "Showing: " + currentLevelFilter + " level";
+      el("approvalsSub").textContent = "Requests for the " + currentLevelFilter + " space.";
+    } else {
+      el("approvalsFilterBar").style.display = "none";
+      el("approvalsSub").textContent = "Review requests and grant a role before someone can sign in.";
+    }
+
+    const url = currentLevelFilter
+      ? API_BASE + "/api/approvals?level=" + currentLevelFilter
+      : API_BASE + "/api/approvals";
+
     try {
-      const res = await fetch(API_BASE + "/api/approvals", {
+      const res = await fetch(url, {
         method: "GET",
         headers: authHeaders()
       });
