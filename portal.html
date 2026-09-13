@@ -1576,8 +1576,34 @@
   const ROLE_LABELS = {
     general_admin: "General Admin",
     primary_admin: "Primary Admin",
-    secondary_admin: "Secondary Admin"
+    secondary_admin: "Secondary Admin",
+    teacher: "Teacher"
   };
+
+  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results"];
+
+  function applyToolVisibility(isTeacherRole) {
+    document.querySelectorAll(".tool-tile").forEach(tile => {
+      tile.style.display = (isTeacherRole && !TEACHER_ALLOWED_TOOLS.includes(tile.dataset.tool)) ? "none" : "";
+    });
+  }
+
+  function applyResultsTabVisibility(isTeacherRole) {
+    const approveTab = document.querySelector('.results-subtab[data-resultstab="approve"]');
+    const enterTab = document.querySelector('.results-subtab[data-resultstab="enter"]');
+    const subnav = approveTab ? approveTab.closest(".roster-subnav") : null;
+
+    if (isTeacherRole) {
+      if (approveTab) approveTab.style.display = "none";
+      if (subnav) subnav.style.display = "none";
+      el("results-approve").classList.remove("active");
+      if (enterTab) enterTab.classList.add("active");
+      el("results-enter").classList.add("active");
+    } else {
+      if (approveTab) approveTab.style.display = "";
+      if (subnav) subnav.style.display = "flex";
+    }
+  }
 
   let currentAdminRole = null;
   let currentLevelFilter = "both"; // 'primary' | 'secondary' | 'both'
@@ -1634,6 +1660,7 @@
     currentAdminRole = profile.role;
     el("adminRoleSubtitle").textContent = ROLE_LABELS[profile.role] || profile.role.replace(/_/g, " ");
     el("adminUserBadge").textContent = profile.name;
+    el("levelBanner").style.display = "block";
 
     // Non-general admins are locked to their own level; hide the toggle.
     if (profile.role === "primary_admin") {
@@ -1647,6 +1674,29 @@
       el("levelToggle").style.display = "flex";
     }
     applyLevelToggleUI();
+    applyToolVisibility(false);
+    applyResultsTabVisibility(false);
+
+    // Return to the tool grid on every fresh sign-in.
+    el("toolPanel").classList.remove("active");
+    el("toolGrid").style.display = "grid";
+  }
+
+  function showTeacherDashboard(profile) {
+    el("loginView").style.display = "none";
+    el("dashboard").classList.remove("active");
+    el("adminShell").classList.add("active");
+
+    currentAdminRole = "teacher";
+    el("adminRoleSubtitle").textContent = "Teacher";
+    el("adminUserBadge").textContent = profile.name;
+
+    currentLevelFilter = "both";
+    el("levelToggle").style.display = "none";
+    el("levelBanner").style.display = "none";
+
+    applyToolVisibility(true);
+    applyResultsTabVisibility(true);
 
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
@@ -1656,6 +1706,8 @@
   function showDashboard(type, profile) {
     if (type === "staff" && isAdminRole(profile.role)) {
       showAdminDashboard(profile);
+    } else if (type === "staff" && profile.role === "teacher") {
+      showTeacherDashboard(profile);
     } else {
       showSimpleDashboard(type, profile);
     }
