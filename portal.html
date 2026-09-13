@@ -1224,8 +1224,10 @@
       <!-- ---------- PLACEHOLDER SECTIONS ---------- -->
       <div id="section-manage-accounts" class="admin-section">
         <h3>Manage Accounts</h3>
-        <p class="sub">View and edit existing staff and student accounts.</p>
-        <div class="coming-soon">This section is being built next.</div>
+        <p class="sub">View and edit existing staff accounts.</p>
+        <a class="refresh-link" id="refreshManageAccounts">Refresh list</a>
+        <div id="manageAccountsMsg" class="msg"></div>
+        <div id="manageAccountsList"></div>
       </div>
 
       <div id="section-attendance" class="admin-section">
@@ -2060,7 +2062,8 @@
     general_admin: "General Admin",
     primary_admin: "Primary Admin",
     secondary_admin: "Secondary Admin",
-    teacher: "Teacher"
+    teacher: "Teacher",
+    cashier: "Cashier"
   };
 
   const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results"];
@@ -2348,6 +2351,9 @@
     }
     if (toolName === "admissions") {
       loadAdmissions();
+    }
+    if (toolName === "manage-accounts") {
+      loadManageAccounts();
     }
   }
 
@@ -4298,6 +4304,183 @@
 
   el("refreshDecidedAdmissions").addEventListener("click", loadDecidedAdmissions);
   el("decidedStatusSelect").addEventListener("change", loadDecidedAdmissions);
+
+  // ---------- Manage Accounts ----------
+  function manageAccountCardHtml(s) {
+    const statusBadge = s.status === "suspended"
+      ? `<span style="color:#b00020; font-weight:600;">Suspended</span>`
+      : `<span style="color:#1e5631; font-weight:600;">Active</span>`;
+
+    return `
+      <div class="roster-item" data-staff-id="${s.id}">
+        <p class="roster-item-name">${s.name}</p>
+        <p class="roster-item-meta">${s.email} · ${statusBadge}</p>
+
+        <div class="row2" style="margin-top:10px;">
+          <select class="ma-role-select" data-staff-id="${s.id}">
+            ${ROLE_OPTIONS.map(r => `<option value="${r}"${r === s.role ? " selected" : ""}>${(ROLE_LABELS[r] || r.replace(/_/g, " "))}</option>`).join("")}
+          </select>
+          <select class="ma-level-select" data-staff-id="${s.id}">
+            <option value=""${!s.level ? " selected" : ""}>No level</option>
+            <option value="primary"${s.level === "primary" ? " selected" : ""}>Primary</option>
+            <option value="secondary"${s.level === "secondary" ? " selected" : ""}>Secondary</option>
+          </select>
+        </div>
+        <button type="button" class="ma-save-role-btn" data-staff-id="${s.id}" style="margin-top:8px;">Save Role/Level</button>
+
+        <div class="row2" style="margin-top:10px;">
+          <button type="button" class="ma-suspend-btn" data-staff-id="${s.id}" data-current-status="${s.status}">
+            ${s.status === "suspended" ? "Reactivate" : "Suspend"}
+          </button>
+          <button type="button" class="ma-reset-btn" data-staff-id="${s.id}">Reset Password</button>
+        </div>
+        <a class="delete-link ma-delete-link" data-staff-id="${s.id}" data-name="${s.name}" style="margin-top:8px; display:inline-block;">Delete Account</a>
+
+        <div class="ma-item-msg msg" data-staff-id="${s.id}" style="margin-top:8px;"></div>
+      </div>
+    `;
+  }
+
+  async function loadManageAccounts() {
+    clearMsg("manageAccountsMsg");
+    const list = el("manageAccountsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/staff", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("manageAccountsMsg", data.error || "Could not load accounts.", "error");
+        return;
+      }
+
+      const staff = data.staff || [];
+      if (!staff.length) {
+        list.innerHTML = `<div class="empty-state">No staff accounts yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = staff.map(s => manageAccountCardHtml(s)).join("");
+      wireManageAccountsHandlers();
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("manageAccountsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  function maItemMsg(staffId, text, type) {
+    const box = document.querySelector(`.ma-item-msg[data-staff-id="${staffId}"]`);
+    if (!box) return;
+    box.textContent = text;
+    box.className = "ma-item-msg msg" + (type ? " " + type : "");
+  }
+
+  function wireManageAccountsHandlers() {
+    document.querySelectorAll(".ma-save-role-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const staffId = btn.dataset.staffId;
+        const role = document.querySelector(`.ma-role-select[data-staff-id="${staffId}"]`).value;
+        const level = document.querySelector(`.ma-level-select[data-staff-id="${staffId}"]`).value;
+
+        btn.disabled = true;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ role, level: level || null })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            maItemMsg(staffId, data.error || "Could not update account.", "error");
+            return;
+          }
+          maItemMsg(staffId, data.message || "Updated.", "success");
+        } catch (err) {
+          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll(".ma-suspend-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const staffId = btn.dataset.staffId;
+        const newStatus = btn.dataset.currentStatus === "suspended" ? "active" : "suspended";
+
+        btn.disabled = true;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId + "/status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ status: newStatus })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            maItemMsg(staffId, data.error || "Could not update status.", "error");
+            btn.disabled = false;
+            return;
+          }
+          loadManageAccounts();
+        } catch (err) {
+          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll(".ma-reset-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const staffId = btn.dataset.staffId;
+        if (!confirm("Generate a new temporary password for this account?")) return;
+
+        btn.disabled = true;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId + "/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({})
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            maItemMsg(staffId, data.error || "Could not reset password.", "error");
+            return;
+          }
+          maItemMsg(staffId, "New temporary password: " + data.tempPassword + " — share this with the staff member now.", "success");
+        } catch (err) {
+          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll(".ma-delete-link").forEach(link => {
+      link.addEventListener("click", async () => {
+        const staffId = link.dataset.staffId;
+        if (!confirm("Permanently delete " + link.dataset.name + "'s account? This can't be undone.")) return;
+
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId, {
+            method: "DELETE",
+            headers: authHeaders()
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            maItemMsg(staffId, data.error || "Could not delete account.", "error");
+            return;
+          }
+          loadManageAccounts();
+        } catch (err) {
+          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+        }
+      });
+    });
+  }
+
+  el("refreshManageAccounts").addEventListener("click", loadManageAccounts);
 
   // ---------- Restore session on page load ----------
   (function restoreSession() {
