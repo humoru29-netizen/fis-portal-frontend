@@ -1832,6 +1832,9 @@
           continue; // real rejection — drop it, keep going with the rest
         }
         // success — drops off the queue by not being kept below
+        if (item.path === "/api/students" && item.body && item.body.classId) {
+          invalidateCachePrefix("/api/students?classId=" + item.body.classId);
+        }
       } catch (networkErr) {
         stoppedAt = i; // connection dropped mid-sync — keep this item and the rest
         break;
@@ -2680,6 +2683,7 @@
         showMsg("addStudentMsg", "Saved offline — this student will be added once synced. Admission number will be assigned at that time.", "success");
       } else {
         showMsg("addStudentMsg", "Student added. Admission number: " + result.data.admissionNo, "success");
+        invalidateCachePrefix("/api/students?classId=" + classSelect.value);
       }
       e.target.reset();
 
@@ -2710,18 +2714,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetchWithTimeout(API_BASE + "/api/students?classId=" + classId, {
-        method: "GET",
-        headers: authHeaders()
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        list.innerHTML = "";
-        showMsg("studentsMsg", data.error || "Could not load students.", "error");
-        return;
-      }
-
+      const data = await cachedGetJson("/api/students?classId=" + classId);
       const students = data.students || [];
       currentClassStudents = students;
 
@@ -2747,7 +2740,7 @@
         students.map(s => `<option value="${s.id}">${s.name} (${s.admission_no})</option>`).join("");
     } catch (err) {
       list.innerHTML = "";
-      showMsg("studentsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentsMsg", "Could not reach the portal server, and nothing is cached for this class yet on this device.", "error");
     }
   }
 
@@ -2769,6 +2762,7 @@
         return;
       }
       showMsg("studentsMsg", data.message || "Student removed.", "success");
+      invalidateCachePrefix("/api/students?classId=" + classId);
       loadStudentsForClass(classId);
     } catch (err) {
       showMsg("studentsMsg", "Could not reach the portal server. Check your connection.", "error");
