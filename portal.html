@@ -542,7 +542,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -554,21 +554,83 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active {
     display: block;
+  }
+
+  .result-entry-row {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .result-entry-row .result-entry-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 8px;
+  }
+
+  .result-entry-row .score-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .result-entry-row .score-inputs label {
+    font-size: 11px;
+    margin: 0 0 3px;
+  }
+
+  .result-entry-row .score-inputs input {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .result-entry-row .grade-preview {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+
+  .result-entry-row .grade-preview .grade-value {
+    font-weight: 700;
+    color: var(--maroon);
+  }
+
+  .pending-result-row {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .pending-result-row .pending-result-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 2px;
+  }
+
+  .pending-result-row .pending-result-meta {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0 0 10px;
   }
 
   .submission-row {
@@ -1175,7 +1237,75 @@
       <div id="section-results" class="admin-section">
         <h3>Results Approval</h3>
         <p class="sub">Enter and publish student results.</p>
-        <div class="coming-soon">This section is being built next.</div>
+
+        <div class="roster-subnav">
+          <button class="results-subtab active" data-resultstab="enter">Enter Scores</button>
+          <button class="results-subtab" data-resultstab="approve">Approve</button>
+        </div>
+
+        <!-- ---------- ENTER SCORES ---------- -->
+        <div id="results-enter" class="results-subpanel active">
+          <label for="resClassSelect">Class</label>
+          <select id="resClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <label for="resSubjectSelect">Subject</label>
+          <select id="resSubjectSelect">
+            <option value="">Select a class first…</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="resTermSelect">Term</label>
+              <select id="resTermSelect">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="resSessionInput">Session</label>
+              <input type="text" id="resSessionInput" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="loadResultsBtn" class="submit">Load Class</button>
+          <div id="resultsLoadMsg" class="msg"></div>
+
+          <div id="resultsEntryList"></div>
+        </div>
+
+        <!-- ---------- APPROVE ---------- -->
+        <div id="results-approve" class="results-subpanel">
+          <label for="apResClassSelect">Class</label>
+          <select id="apResClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="apResTermSelect">Term</label>
+              <select id="apResTermSelect">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="apResSessionInput">Session</label>
+              <input type="text" id="apResSessionInput" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="loadPendingResultsBtn" class="submit">Load Pending Results</button>
+          <a class="refresh-link" id="approveAllPendingBtn">Approve all pending</a>
+          <div id="pendingResultsMsg" class="msg"></div>
+
+          <div id="pendingResultsList"></div>
+        </div>
       </div>
 
       <div id="section-admissions" class="admin-section">
@@ -1489,6 +1619,11 @@
       populateAssignClassInput();
       populateViewAssignClassSelect();
     }
+    // If the results panel is open, refresh its class dropdowns against the new level.
+    if (el("section-results").classList.contains("active")) {
+      populateResClassSelect();
+      populateApResClassSelect();
+    }
   }
 
   function showAdminDashboard(profile) {
@@ -1658,6 +1793,10 @@
     if (toolName === "assignments") {
       populateAssignClassInput();
       populateViewAssignClassSelect();
+    }
+    if (toolName === "results") {
+      populateResClassSelect();
+      populateApResClassSelect();
     }
   }
 
@@ -2875,6 +3014,310 @@
 
   el("backToAssignmentsList").addEventListener("click", () => {
     el("submissionsPanel").style.display = "none";
+  });
+
+  // ---------- Results: sub-tab switching (Enter Scores / Approve) ----------
+  document.querySelectorAll(".results-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".results-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".results-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("results-" + btn.dataset.resultstab).classList.add("active");
+    });
+  });
+
+  function computeGradeClient(total) {
+    if (total === null || isNaN(total)) return "—";
+    if (total >= 75) return "A1";
+    if (total >= 70) return "B2";
+    if (total >= 65) return "B3";
+    if (total >= 60) return "C4";
+    if (total >= 55) return "C5";
+    if (total >= 50) return "C6";
+    if (total >= 45) return "D7";
+    if (total >= 40) return "E8";
+    return "F9";
+  }
+
+  // ---------- Results: enter scores ----------
+  async function populateResClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("resClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("resClassSelect").addEventListener("change", async (e) => {
+    const classId = e.target.value;
+    el("resSubjectSelect").innerHTML = `<option value="">Loading…</option>`;
+
+    if (!classId) {
+      el("resSubjectSelect").innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      const subjects = data.subjects || [];
+
+      if (!subjects.length) {
+        el("resSubjectSelect").innerHTML = `<option value="">No subjects assigned to this class yet</option>`;
+        return;
+      }
+
+      el("resSubjectSelect").innerHTML = `<option value="">Select…</option>` +
+        subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+    } catch (err) {
+      el("resSubjectSelect").innerHTML = `<option value="">Could not load subjects</option>`;
+    }
+  });
+
+  el("loadResultsBtn").addEventListener("click", async () => {
+    clearMsg("resultsLoadMsg");
+    const list = el("resultsEntryList");
+
+    const classId = el("resClassSelect").value;
+    const subjectId = el("resSubjectSelect").value;
+    const term = el("resTermSelect").value;
+    const session = el("resSessionInput").value.trim();
+
+    if (!classId || !subjectId || !term || !session) {
+      showMsg("resultsLoadMsg", "Please select a class, subject, term, and session.", "error");
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(
+        API_BASE + "/api/results?classId=" + classId + "&subjectId=" + subjectId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("resultsLoadMsg", data.error || "Could not load results.", "error");
+        return;
+      }
+
+      const students = data.students || [];
+      if (!students.length) {
+        list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+        return;
+      }
+
+      list.innerHTML = students.map(s => `
+        <div class="result-entry-row" data-student-id="${s.student_id}">
+          <p class="result-entry-name">${s.student_name}</p>
+          <div class="score-inputs">
+            <div>
+              <label>CA1</label>
+              <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0">
+            </div>
+            <div>
+              <label>CA2</label>
+              <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0">
+            </div>
+            <div>
+              <label>Exam</label>
+              <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0">
+            </div>
+          </div>
+          <p class="grade-preview">Grade: <span class="grade-value">${s.grade || "—"}</span>${s.status ? " · " + s.status : ""}</p>
+          <button type="button" class="submit save-result-btn">Save</button>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".result-entry-row").forEach(row => {
+        const recompute = () => {
+          const ca1 = parseFloat(row.querySelector(".ca1-input").value) || 0;
+          const ca2 = parseFloat(row.querySelector(".ca2-input").value) || 0;
+          const exam = parseFloat(row.querySelector(".exam-input").value) || 0;
+          const total = ca1 + ca2 + exam;
+          row.querySelector(".grade-value").textContent = computeGradeClient(total);
+        };
+        row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", recompute));
+
+        row.querySelector(".save-result-btn").addEventListener("click", async () => {
+          const btn = row.querySelector(".save-result-btn");
+          btn.disabled = true;
+          clearMsg("resultsLoadMsg");
+
+          try {
+            const saveRes = await fetch(API_BASE + "/api/results", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...authHeaders() },
+              body: JSON.stringify({
+                studentId: row.dataset.studentId,
+                classId, subjectId, term, session,
+                ca1: row.querySelector(".ca1-input").value,
+                ca2: row.querySelector(".ca2-input").value,
+                exam: row.querySelector(".exam-input").value
+              })
+            });
+            const saveData = await saveRes.json();
+
+            if (!saveRes.ok) {
+              showMsg("resultsLoadMsg", saveData.error || "Could not save score.", "error");
+              return;
+            }
+
+            row.querySelector(".grade-value").textContent = saveData.grade || "—";
+            showMsg("resultsLoadMsg", "Saved.", "success");
+          } catch (err) {
+            showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  });
+
+  // ---------- Results: approve ----------
+  async function populateApResClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("apResClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  async function loadPendingResults() {
+    clearMsg("pendingResultsMsg");
+    const list = el("pendingResultsList");
+
+    const classId = el("apResClassSelect").value;
+    const term = el("apResTermSelect").value;
+    const session = el("apResSessionInput").value.trim();
+
+    if (!classId || !term || !session) {
+      showMsg("pendingResultsMsg", "Please select a class, term, and session.", "error");
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(
+        API_BASE + "/api/results/pending?classId=" + classId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("pendingResultsMsg", data.error || "Could not load pending results.", "error");
+        return;
+      }
+
+      const results = data.results || [];
+      if (!results.length) {
+        list.innerHTML = `<div class="empty-state">No pending results for this class/term/session.</div>`;
+        return;
+      }
+
+      list.innerHTML = results.map(r => {
+        const total = (r.ca1 || 0) + (r.ca2 || 0) + (r.exam || 0);
+        return `
+          <div class="pending-result-row" data-id="${r.id}">
+            <p class="pending-result-name">${r.student_name} · ${r.subject_name}</p>
+            <p class="pending-result-meta">CA1 ${r.ca1 ?? "—"} · CA2 ${r.ca2 ?? "—"} · Exam ${r.exam ?? "—"} · Total ${total} · Grade ${r.grade || "—"}</p>
+            <div class="approval-actions">
+              <button class="btn-approve" data-action="approved">Approve</button>
+              <button class="btn-reject" data-action="withheld">Withhold</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      list.querySelectorAll(".pending-result-row").forEach(row => {
+        row.querySelectorAll("button[data-action]").forEach(btn => {
+          btn.addEventListener("click", () => setResultStatus(row.dataset.id, btn.dataset.action, row));
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function setResultStatus(resultId, status, row) {
+    row.querySelectorAll("button").forEach(b => b.disabled = true);
+    clearMsg("pendingResultsMsg");
+
+    try {
+      const res = await fetch(API_BASE + "/api/results/" + resultId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("pendingResultsMsg", data.error || "Action failed.", "error");
+        row.querySelectorAll("button").forEach(b => b.disabled = false);
+        return;
+      }
+
+      showMsg("pendingResultsMsg", data.message || "Done.", "success");
+      loadPendingResults();
+    } catch (err) {
+      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+      row.querySelectorAll("button").forEach(b => b.disabled = false);
+    }
+  }
+
+  el("loadPendingResultsBtn").addEventListener("click", loadPendingResults);
+
+  el("approveAllPendingBtn").addEventListener("click", async () => {
+    clearMsg("pendingResultsMsg");
+    const classId = el("apResClassSelect").value;
+    const term = el("apResTermSelect").value;
+    const session = el("apResSessionInput").value.trim();
+
+    if (!classId || !term || !session) {
+      showMsg("pendingResultsMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    if (!confirm("Approve every pending result for this class/term/session?")) return;
+
+    try {
+      const res = await fetch(API_BASE + "/api/results/approve-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ classId, term, session })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("pendingResultsMsg", data.error || "Could not approve results.", "error");
+        return;
+      }
+
+      showMsg("pendingResultsMsg", data.message || "Approved.", "success");
+      loadPendingResults();
+    } catch (err) {
+      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
   });
 
   // ---------- Restore session on page load ----------
