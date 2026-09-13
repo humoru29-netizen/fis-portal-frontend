@@ -1198,6 +1198,10 @@
         <span class="tool-icon">🧾</span>
         <span class="tool-label">Fee Records</span>
       </button>
+      <button class="tool-tile" data-tool="report-card">
+        <span class="tool-icon">🗂️</span>
+        <span class="tool-label">Report Card</span>
+      </button>
       <button class="tool-tile" data-tool="roster">
         <span class="tool-icon">🏫</span>
         <span class="tool-label">Roster</span>
@@ -1667,6 +1671,38 @@
           <div id="feeTotalsMsg" class="msg"></div>
           <div id="feeTotalsResult" style="margin-top:16px;"></div>
         </div>
+      </div>
+
+      <div id="section-report-card" class="admin-section">
+        <h3>Report Card</h3>
+        <p class="sub">Generate a student's report card for a term (only approved results are included).</p>
+
+        <label for="rcClassSelect">Class</label>
+        <select id="rcClassSelect"><option value="">Select a class…</option></select>
+
+        <label for="rcStudentSelect">Student</label>
+        <select id="rcStudentSelect"><option value="">Select a class first…</option></select>
+
+        <div class="row2">
+          <div>
+            <label for="rcTerm">Term</label>
+            <select id="rcTerm">
+              <option value="">Select…</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+          </div>
+          <div>
+            <label for="rcSession">Session</label>
+            <input type="text" id="rcSession" placeholder="2026/2027">
+          </div>
+        </div>
+
+        <button type="button" id="rcLoadBtn" class="submit">Generate Report Card</button>
+        <div id="rcMsg" class="msg"></div>
+
+        <div id="rcResult" style="margin-top:16px;"></div>
       </div>
 
       <div id="section-roster" class="admin-section">
@@ -2270,7 +2306,7 @@
     cashier: "Cashier"
   };
 
-  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results"];
+  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "report-card"];
   const CASHIER_ALLOWED_TOOLS = ["fees"];
 
   function applyToolVisibility(allowedTools) {
@@ -2588,6 +2624,9 @@
     if (toolName === "fees") {
       populateFeeClassSelects();
       document.querySelector('.fees-subtab[data-feestab="setfee"]').style.display = (currentAdminRole === "cashier") ? "none" : "";
+    }
+    if (toolName === "report-card") {
+      populateRcClassSelect();
     }
   }
 
@@ -4140,6 +4179,160 @@
     } catch (err) {
       result.innerHTML = "";
       showMsg("feeTotalsMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+
+  // =====================================================================
+  // Report Card
+  // =====================================================================
+  async function populateRcClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("rcClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("rcClassSelect").addEventListener("change", (e) => loadStudentsIntoSelect(e.target.value, "rcStudentSelect"));
+
+  function printReportCard(rc) {
+    const attendanceTotal = rc.attendance.present + rc.attendance.absent + rc.attendance.late + rc.attendance.excused;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Report Card — ${rc.student.name}</title>
+        <style>
+          body { font-family: Georgia, serif; color: #222; max-width: 750px; margin: 30px auto; line-height: 1.5; }
+          .letterhead { text-align: center; border-bottom: 3px double #7a1f2b; padding-bottom: 14px; margin-bottom: 20px; }
+          .letterhead h1 { margin: 6px 0 0; font-size: 1.4em; }
+          .letterhead p { margin: 4px 0 0; color: #555; }
+          .meta { display:flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.95em; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 0.9em; }
+          th { background: #f5efe0; }
+          td:first-child, th:first-child { text-align: left; }
+          .summary-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+          .summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; flex: 1; min-width: 140px; }
+          .summary-box .label { font-size: 0.75em; color: #777; text-transform: uppercase; }
+          .summary-box .value { font-size: 1.2em; font-weight: bold; }
+          .pending-note { margin-top: 14px; color: #a06a00; font-size: 0.85em; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="letterhead">
+          <h1>Faith International School, Itobe</h1>
+          <p>Student Report Card</p>
+        </div>
+
+        <div class="meta">
+          <div>
+            <strong>${rc.student.name}</strong><br>
+            Admission No: ${rc.student.admissionNo}<br>
+            Class: ${rc.student.className}
+          </div>
+          <div style="text-align:right;">
+            Term: ${rc.term}<br>
+            Session: ${rc.session}<br>
+            Position: ${rc.position ? rc.position + " of " + rc.outOf : "—"}
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>Subject</th><th>CA1</th><th>CA2</th><th>Exam</th><th>Total</th><th>Grade</th></tr>
+          </thead>
+          <tbody>
+            ${rc.subjects.map(s => `
+              <tr>
+                <td>${s.subjectName}</td>
+                <td>${s.ca1 ?? "—"}</td>
+                <td>${s.ca2 ?? "—"}</td>
+                <td>${s.exam ?? "—"}</td>
+                <td>${s.total}</td>
+                <td>${s.grade || "—"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        ${rc.pendingSubjectCount > 0 ? `<p class="pending-note">Note: ${rc.pendingSubjectCount} subject score(s) are still pending approval and are not shown above.</p>` : ""}
+
+        <div class="summary-grid">
+          <div class="summary-box"><div class="label">Overall Total</div><div class="value">${rc.overallTotal}</div></div>
+          <div class="summary-box"><div class="label">Average</div><div class="value">${rc.average !== null ? rc.average.toFixed(1) : "—"}</div></div>
+          <div class="summary-box"><div class="label">Attendance</div><div class="value">${rc.attendance.present}/${attendanceTotal || "—"}</div></div>
+          <div class="summary-box"><div class="label">Fee Balance</div><div class="value">${Number(rc.fee.balance).toLocaleString()}</div></div>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 0.85em; color: #777;">
+          Attendance — Present: ${rc.attendance.present}, Absent: ${rc.attendance.absent},
+          Late: ${rc.attendance.late}, Excused: ${rc.attendance.excused} (out of ${attendanceTotal} day(s) marked)
+        </p>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = function () { printWindow.print(); };
+  }
+
+  el("rcLoadBtn").addEventListener("click", async () => {
+    clearMsg("rcMsg");
+    const studentId = el("rcStudentSelect").value;
+    const term = el("rcTerm").value;
+    const session = el("rcSession").value.trim();
+    const result = el("rcResult");
+
+    if (!studentId || !term || !session) {
+      showMsg("rcMsg", "Please select a student, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("rcLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/report-card/" + studentId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("rcMsg", data.error || "Could not generate report card.", "error");
+        return;
+      }
+
+      result.innerHTML = `
+        <div class="roster-item">
+          <p class="roster-item-name">${data.student.name} — ${data.student.className}</p>
+          <p class="roster-item-meta">
+            ${data.subjects.length} subject(s) approved · Average: ${data.average !== null ? data.average.toFixed(1) : "—"} ·
+            Position: ${data.position ? data.position + " of " + data.outOf : "—"}
+            ${data.pendingSubjectCount > 0 ? " · " + data.pendingSubjectCount + " subject(s) pending approval" : ""}
+          </p>
+          <a class="refresh-link" id="rcPrintLink">Print Report Card</a>
+        </div>
+      `;
+
+      el("rcPrintLink").addEventListener("click", () => printReportCard(data));
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("rcMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
