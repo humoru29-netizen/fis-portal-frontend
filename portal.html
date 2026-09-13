@@ -3757,7 +3757,10 @@
 
   function admissionCardHtml(a, showDecision) {
     const decisionLine = showDecision
-      ? `<p class="roster-item-meta">${a.status === "approved" ? "Admission No: " + (a.admission_no || "—") : "Status: " + a.status}</p>`
+      ? `<p class="roster-item-meta">${a.status === "approved" ? "Admission No: " + (a.admission_no || "—") + (a.assigned_class_name ? " · " + a.assigned_class_name : "") : "Status: " + a.status}</p>`
+      : "";
+    const printLine = (showDecision && a.status === "approved")
+      ? `<a class="refresh-link admission-print-link" data-app-id="${a.id}" style="margin-top:8px; display:inline-block;">Print Admission Letter</a>`
       : "";
     return `
       <div class="roster-item" data-app-id="${a.id}">
@@ -3766,6 +3769,7 @@
           ${a.level_applied}${a.class_applied ? " — " + a.class_applied : ""} · Guardian: ${a.guardian_name} (${a.guardian_phone})
         </p>
         ${decisionLine}
+        ${printLine}
         ${!showDecision ? `
           <div class="row2" style="margin-top:10px;">
             <select class="admission-class-select" data-app-id="${a.id}">
@@ -3777,6 +3781,76 @@
         ` : ""}
       </div>
     `;
+  }
+
+  function printAdmissionLetter(a) {
+    const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const decidedDate = a.decided_at
+      ? new Date(a.decided_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : today;
+
+    const letterHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Admission Letter — ${a.student_name}</title>
+        <style>
+          body { font-family: Georgia, serif; color: #222; max-width: 700px; margin: 40px auto; line-height: 1.6; }
+          .letterhead { text-align: center; border-bottom: 3px double #7a1f2b; padding-bottom: 16px; margin-bottom: 28px; }
+          .letterhead h1 { margin: 8px 0 0; font-size: 1.4em; }
+          .letterhead p { margin: 4px 0 0; color: #555; }
+          .adm-no { text-align: right; font-weight: bold; margin-bottom: 20px; }
+          .field { margin: 10px 0; }
+          .field strong { display: inline-block; width: 180px; }
+          .signature { margin-top: 60px; }
+          .signature .line { border-top: 1px solid #333; width: 240px; margin-top: 40px; padding-top: 6px; }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="letterhead">
+          <h1>Faith International School, Itobe</h1>
+          <p>Letter of Admission</p>
+        </div>
+
+        <div class="adm-no">Admission No: ${a.admission_no || "—"}</div>
+
+        <p>Date: ${decidedDate}</p>
+
+        <p>Dear ${a.guardian_name},</p>
+
+        <p>We are pleased to inform you that <strong>${a.student_name}</strong> has been offered admission
+        into <strong>${a.assigned_class_name || a.class_applied || "the appropriate class"}</strong>
+        (${a.level_applied} level) at Faith International School, Itobe.</p>
+
+        <div class="field"><strong>Student's Name:</strong> ${a.student_name}</div>
+        <div class="field"><strong>Date of Birth:</strong> ${a.dob || "—"}</div>
+        <div class="field"><strong>Gender:</strong> ${a.gender || "—"}</div>
+        <div class="field"><strong>Class Assigned:</strong> ${a.assigned_class_name || "—"}</div>
+        <div class="field"><strong>Admission Number:</strong> ${a.admission_no || "—"}</div>
+        <div class="field"><strong>Guardian's Name:</strong> ${a.guardian_name}</div>
+        <div class="field"><strong>Guardian's Phone:</strong> ${a.guardian_phone}</div>
+
+        <p style="margin-top:30px;">Kindly present this letter along with the admission number when reporting
+        to the school office to complete enrollment.</p>
+
+        <p>We look forward to welcoming ${a.student_name} to our school community.</p>
+
+        <div class="signature">
+          <p>Yours sincerely,</p>
+          <div class="line">School Administrator</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(letterHtml);
+    printWindow.document.close();
+    printWindow.onload = function () { printWindow.print(); };
   }
 
   async function populateAdmissionClassSelects() {
@@ -3909,6 +3983,12 @@
       list.innerHTML = applications.length
         ? applications.map(a => admissionCardHtml(a, true)).join("")
         : `<div class="empty-state">No ${status} applications.</div>`;
+
+      const appsById = {};
+      applications.forEach(a => { appsById[a.id] = a; });
+      list.querySelectorAll(".admission-print-link").forEach(link => {
+        link.addEventListener("click", () => printAdmissionLetter(appsById[link.dataset.appId]));
+      });
     } catch (err) {
       list.innerHTML = "";
       showMsg("decidedAdmissionsMsg", "Could not reach the portal server. Check your connection.", "error");
