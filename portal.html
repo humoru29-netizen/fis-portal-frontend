@@ -567,7 +567,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -579,20 +579,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active {
     display: block;
   }
 
@@ -1234,39 +1234,71 @@
         <h3>Attendance</h3>
         <p class="sub">Mark and review daily attendance for a class.</p>
 
-        <label for="attClassSelect">Class</label>
-        <select id="attClassSelect">
-          <option value="">Select a class…</option>
-        </select>
+        <div class="roster-subnav">
+          <button class="attendance-subtab active" data-attendancetab="mark">Mark Attendance</button>
+          <button class="attendance-subtab" data-attendancetab="history">History</button>
+        </div>
 
-        <div class="row2">
-          <div>
-            <label for="attDateInput">Date</label>
-            <input type="date" id="attDateInput">
+        <!-- ---------- MARK ---------- -->
+        <div id="attendance-mark" class="attendance-subpanel active">
+          <label for="attClassSelect">Class</label>
+          <select id="attClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="attDateInput">Date</label>
+              <input type="date" id="attDateInput">
+            </div>
+            <div>
+              <label for="attTermSelect">Term</label>
+              <select id="attTermSelect">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label for="attTermSelect">Term</label>
-            <select id="attTermSelect">
-              <option value="">Select…</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
+
+          <label for="attSessionInput">Session</label>
+          <input type="text" id="attSessionInput" placeholder="2026/2027">
+
+          <button type="button" id="loadAttendanceBtn" class="submit">Load Class</button>
+          <div id="attendanceLoadMsg" class="msg"></div>
+
+          <div id="attendanceMarkArea" style="display:none; margin-top:20px;">
+            <a class="refresh-link" id="markAllPresent">Mark all present</a>
+            <div id="attendanceStudentList"></div>
+
+            <button type="button" id="saveAttendanceBtn" class="submit">Save Attendance</button>
+            <div id="attendanceSaveMsg" class="msg"></div>
           </div>
         </div>
 
-        <label for="attSessionInput">Session</label>
-        <input type="text" id="attSessionInput" placeholder="2026/2027">
+        <!-- ---------- HISTORY ---------- -->
+        <div id="attendance-history" class="attendance-subpanel">
+          <label for="attHistClassSelect">Class</label>
+          <select id="attHistClassSelect">
+            <option value="">Select a class…</option>
+          </select>
 
-        <button type="button" id="loadAttendanceBtn" class="submit">Load Class</button>
-        <div id="attendanceLoadMsg" class="msg"></div>
+          <label for="attHistTermSelect">Term</label>
+          <select id="attHistTermSelect">
+            <option value="">Select…</option>
+            <option value="First Term">First Term</option>
+            <option value="Second Term">Second Term</option>
+            <option value="Third Term">Third Term</option>
+          </select>
 
-        <div id="attendanceMarkArea" style="display:none; margin-top:20px;">
-          <a class="refresh-link" id="markAllPresent">Mark all present</a>
-          <div id="attendanceStudentList"></div>
+          <label for="attHistSessionInput">Session</label>
+          <input type="text" id="attHistSessionInput" placeholder="2026/2027">
 
-          <button type="button" id="saveAttendanceBtn" class="submit">Save Attendance</button>
-          <div id="attendanceSaveMsg" class="msg"></div>
+          <button type="button" id="loadAttHistoryBtn" class="submit">Load Summary</button>
+          <div id="attHistMsg" class="msg"></div>
+
+          <div id="attHistSummaryList" style="margin-top:16px;"></div>
         </div>
       </div>
 
@@ -3471,6 +3503,137 @@
       btn.disabled = false;
     }
   });
+
+  // ---------- Attendance: sub-tab switching (Mark / History) ----------
+  document.querySelectorAll(".attendance-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".attendance-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".attendance-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("attendance-" + btn.dataset.attendancetab).classList.add("active");
+      if (btn.dataset.attendancetab === "history") {
+        populateAttHistClassSelect();
+      }
+    });
+  });
+
+  async function populateAttHistClassSelect() {
+    const select = el("attHistClassSelect");
+    if (select.dataset.loaded === "true") return;
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    select.innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+    select.dataset.loaded = "true";
+  }
+
+  function attendanceSummaryRowHtml(row) {
+    return `
+      <div class="roster-item" data-student-id="${row.student_id}">
+        <p class="roster-item-name">${row.name}</p>
+        <p class="roster-item-meta">
+          Present: ${row.present_count || 0} · Absent: ${row.absent_count || 0} ·
+          Late: ${row.late_count || 0} · Excused: ${row.excused_count || 0} · Marked: ${row.total_marked || 0} day(s)
+        </p>
+        <a class="refresh-link att-view-days-link" data-student-id="${row.student_id}" data-name="${row.name}">View day-by-day</a>
+        <div class="att-days-box" data-student-id="${row.student_id}" style="display:none; margin-top:8px;"></div>
+      </div>
+    `;
+  }
+
+  el("loadAttHistoryBtn").addEventListener("click", async () => {
+    clearMsg("attHistMsg");
+    const classId = el("attHistClassSelect").value;
+    const term = el("attHistTermSelect").value;
+    const session = el("attHistSessionInput").value.trim();
+    const list = el("attHistSummaryList");
+
+    if (!classId || !term || !session) {
+      showMsg("attHistMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("loadAttHistoryBtn");
+    btn.disabled = true;
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/attendance/summary?classId=" + classId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("attHistMsg", data.error || "Could not load attendance history.", "error");
+        return;
+      }
+
+      const summary = data.summary || [];
+      if (!summary.length) {
+        list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+        return;
+      }
+
+      list.innerHTML = summary.map(row => attendanceSummaryRowHtml(row)).join("");
+
+      list.querySelectorAll(".att-view-days-link").forEach(link => {
+        link.addEventListener("click", () => toggleStudentAttendanceDays(link.dataset.studentId, term, session));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("attHistMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function toggleStudentAttendanceDays(studentId, term, session) {
+    const box = document.querySelector(`.att-days-box[data-student-id="${studentId}"]`);
+    if (!box) return;
+
+    if (box.style.display !== "none") {
+      box.style.display = "none";
+      return;
+    }
+
+    box.style.display = "block";
+    box.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/attendance/student/" + studentId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        box.innerHTML = `<p class="msg error">${data.error || "Could not load history."}</p>`;
+        return;
+      }
+
+      const days = data.days || [];
+      if (!days.length) {
+        box.innerHTML = `<p style="color:#999;">No attendance recorded yet.</p>`;
+        return;
+      }
+
+      box.innerHTML = days.map(d => `
+        <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
+          <span>${d.date}</span>
+          <span style="text-transform:capitalize;">${d.status}</span>
+        </div>
+      `).join("");
+    } catch (err) {
+      box.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+    }
+  }
+
 
   // ---------- Assignments: sub-tab switching (Create / View & Grade) ----------
   document.querySelectorAll(".assign-subtab").forEach(btn => {
