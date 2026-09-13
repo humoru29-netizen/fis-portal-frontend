@@ -1151,8 +1151,12 @@
 
   <div class="sync-bar" id="syncBar">
     <span id="syncBarText">Checking connection…</span>
-    <button type="button" id="syncNowBtn" style="display:none;">Sync Now</button>
+    <span style="display:flex; gap:8px;">
+      <a class="refresh-link" id="viewQueueLink" style="display:none;">View</a>
+      <button type="button" id="syncNowBtn" style="display:none;">Sync Now</button>
+    </span>
   </div>
+  <div id="syncQueueList" style="display:none; padding:10px 16px; background:#fffdf5; border-bottom:1px solid #f0d97a; font-size:0.82em;"></div>
 
   <div class="level-toggle" id="levelToggle">
     <button data-level="primary">Primary View</button>
@@ -1775,7 +1779,7 @@
         method,
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body)
-      });
+      }, 12000);
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -1812,7 +1816,7 @@
           method: item.method,
           headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify(item.body)
-        });
+        }, 15000);
 
         if (res.status === 401) {
           sessionExpired = true;
@@ -1854,6 +1858,7 @@
 
     const text = el("syncBarText");
     const btn = el("syncNowBtn");
+    const viewLink = el("viewQueueLink");
     const pending = queueLength();
     const online = navigator.onLine;
 
@@ -1873,7 +1878,26 @@
       text.textContent = "All entries synced.";
       btn.style.display = "none";
     }
+
+    if (viewLink) {
+      viewLink.style.display = pending ? "inline-block" : "none";
+      if (!pending) el("syncQueueList").style.display = "none";
+    }
+    renderQueueList();
   }
+
+  function renderQueueList() {
+    const box = el("syncQueueList");
+    if (!box || box.style.display === "none") return;
+    const queue = loadOfflineQueue();
+    box.innerHTML = queue.length
+      ? queue.map((item, i) => {
+          const when = new Date(item.queuedAt).toLocaleString();
+          return `<div style="padding:6px 0; border-bottom:1px solid #f0e6c8;">${i + 1}. ${item.description} <span style="color:#999;">— ${when}</span></div>`;
+        }).join("")
+      : `<div style="color:#999;">Nothing queued.</div>`;
+  }
+
 
   window.addEventListener("online", () => { updateSyncBar(); syncOfflineQueue(); });
   window.addEventListener("offline", updateSyncBar);
@@ -1886,6 +1910,19 @@
     return "fis_cache_" + path.replace(/[^a-zA-Z0-9]/g, "_");
   }
 
+  /**
+   * Clears any cached GET results whose path starts with the given
+   * prefix (e.g. "/api/classes" clears "/api/classes", "/api/classes?level=primary",
+   * etc.). Call this right after a successful add/delete so a slow
+   * connection can't fall back to a now-stale cached list.
+   */
+  function invalidateCachePrefix(pathPrefix) {
+    const keyPrefix = cacheKeyFor(pathPrefix);
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(keyPrefix))
+      .forEach(k => localStorage.removeItem(k));
+  }
+
   async function cachedGetJson(path) {
     const cacheKey = cacheKeyFor(path);
 
@@ -1896,7 +1933,7 @@
     }
 
     try {
-      const res = await fetchWithTimeout(API_BASE + path, { method: "GET", headers: authHeaders() });
+      const res = await fetchWithTimeout(API_BASE + path, { method: "GET", headers: authHeaders() }, 15000);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Request failed.");
       localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -2271,6 +2308,14 @@
   }
   el("logoutBtn").addEventListener("click", doLogout);
   el("syncNowBtn").addEventListener("click", syncOfflineQueue);
+  el("viewQueueLink").addEventListener("click", () => {
+    const box = el("syncQueueList");
+    const viewLink = el("viewQueueLink");
+    const showing = box.style.display !== "none";
+    box.style.display = showing ? "none" : "block";
+    viewLink.textContent = showing ? "View" : "Hide";
+    if (!showing) renderQueueList();
+  });
   el("adminLogoutBtn").addEventListener("click", doLogout);
 
   // ---------- Tool tiles: open a section, hide the grid ----------
@@ -2506,6 +2551,7 @@
         return;
       }
       showMsg("addClassMsg", data.message || "Class deleted.", "success");
+      invalidateCachePrefix("/api/classes");
       loadClassesForManagement();
       populateClassDropdowns();
       populateAssignClassSelect();
@@ -2541,6 +2587,7 @@
       }
 
       showMsg("addClassMsg", data.message || "Class added.", "success");
+      invalidateCachePrefix("/api/classes");
       e.target.reset();
       loadClassesForManagement();
       populateClassDropdowns();
@@ -2943,6 +2990,7 @@
         return;
       }
       showMsg("addSubjectMsg", data.message || "Subject deleted.", "success");
+      invalidateCachePrefix("/api/subjects");
       loadSubjects();
     } catch (err) {
       showMsg("addSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
@@ -2972,6 +3020,7 @@
       }
 
       showMsg("addSubjectMsg", data.message || "Subject added.", "success");
+      invalidateCachePrefix("/api/subjects");
       e.target.reset();
       loadSubjects();
     } catch (err) {
@@ -3053,6 +3102,7 @@
         return;
       }
       loadClassSubjects(classId);
+      invalidateCachePrefix("/api/classes/" + classId + "/subjects");
     } catch (err) {
       showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
     }
@@ -3089,6 +3139,7 @@
       }
 
       showMsg("assignSubjectMsg", data.message || "Subject assigned.", "success");
+      invalidateCachePrefix("/api/classes/" + classId + "/subjects");
       loadClassSubjects(classId);
     } catch (err) {
       showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
