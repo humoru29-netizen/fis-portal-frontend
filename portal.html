@@ -542,7 +542,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -554,20 +554,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active {
     display: block;
   }
 
@@ -1006,6 +1006,95 @@
         <div id="studentLoginMsg" class="msg"></div>
       </div>
 
+      <div class="switch-link" style="margin-top:16px;">
+        New family? <a id="showAdmissionApply">Apply for Admission</a>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>&copy; Faith International School, Itobe</footer>
+</div>
+
+<!-- ===== PUBLIC ADMISSION APPLICATION ===== -->
+<div id="admissionApplyView" style="width:100%; display:none; flex-direction:column; align-items:center;">
+
+  <header class="brand">
+    <div class="crest">FIS</div>
+    <h1>Faith International School, Itobe</h1>
+    <p>Apply for Admission</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Admission Application</h2>
+      <p class="sub">Fill this form to apply for a place at the school. An administrator will review it and contact you.</p>
+
+      <form id="admissionApplyForm">
+        <label for="apStudentName">Student's Full Name</label>
+        <input type="text" id="apStudentName" required>
+
+        <div class="row2">
+          <div>
+            <label for="apDob">Date of Birth</label>
+            <input type="date" id="apDob">
+          </div>
+          <div>
+            <label for="apGender">Gender</label>
+            <select id="apGender">
+              <option value="">Select…</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label for="apLevel">Level Applying For</label>
+            <select id="apLevel" required>
+              <option value="">Select…</option>
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+            </select>
+          </div>
+          <div>
+            <label for="apClassApplied">Class Applying For (optional)</label>
+            <input type="text" id="apClassApplied" placeholder="e.g. JSS1">
+          </div>
+        </div>
+
+        <label for="apGuardianName">Guardian's Full Name</label>
+        <input type="text" id="apGuardianName" required>
+
+        <div class="row2">
+          <div>
+            <label for="apGuardianPhone">Guardian's Phone</label>
+            <input type="text" id="apGuardianPhone" required>
+          </div>
+          <div>
+            <label for="apGuardianEmail">Guardian's Email (optional)</label>
+            <input type="email" id="apGuardianEmail">
+          </div>
+        </div>
+
+        <label for="apAddress">Home Address (optional)</label>
+        <input type="text" id="apAddress">
+
+        <label for="apPriorSchool">Previous School (optional)</label>
+        <input type="text" id="apPriorSchool">
+
+        <label for="apHealthNotes">Health Notes (optional)</label>
+        <input type="text" id="apHealthNotes" placeholder="Allergies, conditions, etc.">
+
+        <button type="submit" class="submit">Submit Application</button>
+      </form>
+
+      <div id="admissionApplyMsg" class="msg"></div>
+
+      <div class="switch-link">
+        <a id="backToLoginFromApply">&larr; Back to Sign In</a>
+      </div>
     </div>
   </main>
 
@@ -1311,7 +1400,30 @@
       <div id="section-admissions" class="admin-section">
         <h3>Admissions</h3>
         <p class="sub">Review and process new admission requests.</p>
-        <div class="coming-soon">This section is being built next.</div>
+
+        <div class="roster-subnav">
+          <button class="admissions-subtab active" data-admissionstab="pending">Pending</button>
+          <button class="admissions-subtab" data-admissionstab="decided">Decided</button>
+        </div>
+
+        <!-- ---------- PENDING ---------- -->
+        <div id="admissions-pending" class="admissions-subpanel active">
+          <a class="refresh-link" id="refreshAdmissions">Refresh list</a>
+          <div id="admissionsMsg" class="msg"></div>
+          <div id="admissionsList"></div>
+        </div>
+
+        <!-- ---------- DECIDED ---------- -->
+        <div id="admissions-decided" class="admissions-subpanel">
+          <label for="decidedStatusSelect">Show</label>
+          <select id="decidedStatusSelect">
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <a class="refresh-link" id="refreshDecidedAdmissions">Refresh list</a>
+          <div id="decidedAdmissionsMsg" class="msg"></div>
+          <div id="decidedAdmissionsList"></div>
+        </div>
       </div>
 
       <div id="section-fees" class="admin-section">
@@ -1571,6 +1683,56 @@
   el("showLogin").addEventListener("click", () => {
     el("staffSignupView").classList.remove("active");
     el("staffLoginView").style.display = "block";
+  });
+
+  // ---------- Public admission application view switch ----------
+  el("showAdmissionApply").addEventListener("click", () => {
+    el("loginView").style.display = "none";
+    el("admissionApplyView").style.display = "flex";
+  });
+  el("backToLoginFromApply").addEventListener("click", () => {
+    el("admissionApplyView").style.display = "none";
+    el("loginView").style.display = "flex";
+  });
+
+  el("admissionApplyForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearMsg("admissionApplyMsg");
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/admissions/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: el("apStudentName").value.trim(),
+          dob: el("apDob").value || null,
+          gender: el("apGender").value || null,
+          levelApplied: el("apLevel").value,
+          classApplied: el("apClassApplied").value.trim() || null,
+          guardianName: el("apGuardianName").value.trim(),
+          guardianPhone: el("apGuardianPhone").value.trim(),
+          guardianEmail: el("apGuardianEmail").value.trim() || null,
+          address: el("apAddress").value.trim() || null,
+          priorSchool: el("apPriorSchool").value.trim() || null,
+          healthNotes: el("apHealthNotes").value.trim() || null
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("admissionApplyMsg", data.error || "Could not submit application.", "error");
+        return;
+      }
+
+      showMsg("admissionApplyMsg", data.message || "Application submitted.", "success");
+      e.target.reset();
+    } catch (err) {
+      showMsg("admissionApplyMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // ---------- Session storage helpers ----------
@@ -1886,6 +2048,9 @@
     if (toolName === "results") {
       populateResClassSelect();
       populateApResClassSelect();
+    }
+    if (toolName === "admissions") {
+      loadAdmissions();
     }
   }
 
@@ -3579,6 +3744,179 @@
       showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   });
+
+  // ---------- Admissions ----------
+  document.querySelectorAll(".admissions-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".admissions-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".admissions-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("admissions-" + btn.dataset.admissionstab).classList.add("active");
+    });
+  });
+
+  function admissionCardHtml(a, showDecision) {
+    const decisionLine = showDecision
+      ? `<p class="roster-item-meta">${a.status === "approved" ? "Admission No: " + (a.admission_no || "—") : "Status: " + a.status}</p>`
+      : "";
+    return `
+      <div class="roster-item" data-app-id="${a.id}">
+        <p class="roster-item-name">${a.student_name}</p>
+        <p class="roster-item-meta">
+          ${a.level_applied}${a.class_applied ? " — " + a.class_applied : ""} · Guardian: ${a.guardian_name} (${a.guardian_phone})
+        </p>
+        ${decisionLine}
+        ${!showDecision ? `
+          <div class="row2" style="margin-top:10px;">
+            <select class="admission-class-select" data-app-id="${a.id}">
+              <option value="">Place in class…</option>
+            </select>
+            <button type="button" class="admission-approve-btn" data-app-id="${a.id}">Approve</button>
+          </div>
+          <a class="delete-link admission-reject-link" data-app-id="${a.id}" style="margin-top:8px; display:inline-block;">Reject</a>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  async function populateAdmissionClassSelects() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    document.querySelectorAll(".admission-class-select").forEach(sel => {
+      sel.innerHTML = `<option value="">Place in class…</option>` +
+        classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+    });
+  }
+
+  async function loadAdmissions() {
+    clearMsg("admissionsMsg");
+    const list = el("admissionsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/admissions?status=pending", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("admissionsMsg", data.error || "Could not load applications.", "error");
+        return;
+      }
+
+      const applications = data.applications || [];
+      if (!applications.length) {
+        list.innerHTML = `<div class="empty-state">No pending applications.</div>`;
+        return;
+      }
+
+      list.innerHTML = applications.map(a => admissionCardHtml(a, false)).join("");
+      await populateAdmissionClassSelects();
+
+      list.querySelectorAll(".admission-approve-btn").forEach(btn => {
+        btn.addEventListener("click", () => approveAdmission(btn.dataset.appId));
+      });
+      list.querySelectorAll(".admission-reject-link").forEach(link => {
+        link.addEventListener("click", () => rejectAdmission(link.dataset.appId));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function approveAdmission(applicationId) {
+    clearMsg("admissionsMsg");
+    const select = document.querySelector(`.admission-class-select[data-app-id="${applicationId}"]`);
+    const classId = select ? select.value : "";
+    if (!classId) {
+      showMsg("admissionsMsg", "Please choose a class to place this student in.", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + "/api/admissions/" + applicationId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action: "approve", classId })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("admissionsMsg", data.error || "Could not approve application.", "error");
+        return;
+      }
+
+      showMsg("admissionsMsg", `Approved. Admission No: ${data.admissionNo}`, "success");
+      loadAdmissions();
+    } catch (err) {
+      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function rejectAdmission(applicationId) {
+    if (!confirm("Reject this application?")) return;
+    clearMsg("admissionsMsg");
+
+    try {
+      const res = await fetch(API_BASE + "/api/admissions/" + applicationId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action: "reject" })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("admissionsMsg", data.error || "Could not reject application.", "error");
+        return;
+      }
+
+      showMsg("admissionsMsg", data.message || "Application rejected.", "success");
+      loadAdmissions();
+    } catch (err) {
+      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshAdmissions").addEventListener("click", loadAdmissions);
+
+  async function loadDecidedAdmissions() {
+    clearMsg("decidedAdmissionsMsg");
+    const list = el("decidedAdmissionsList");
+    const status = el("decidedStatusSelect").value;
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/admissions?status=" + status, {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("decidedAdmissionsMsg", data.error || "Could not load applications.", "error");
+        return;
+      }
+
+      const applications = data.applications || [];
+      list.innerHTML = applications.length
+        ? applications.map(a => admissionCardHtml(a, true)).join("")
+        : `<div class="empty-state">No ${status} applications.</div>`;
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("decidedAdmissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshDecidedAdmissions").addEventListener("click", loadDecidedAdmissions);
+  el("decidedStatusSelect").addEventListener("change", loadDecidedAdmissions);
 
   // ---------- Restore session on page load ----------
   (function restoreSession() {
