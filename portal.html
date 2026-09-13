@@ -567,7 +567,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -579,20 +579,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active {
     display: block;
   }
 
@@ -1497,7 +1497,176 @@
       <div id="section-fees" class="admin-section">
         <h3>Fee Records</h3>
         <p class="sub">Track cashier records and fee payments.</p>
-        <div class="coming-soon">This section is being built next.</div>
+
+        <div class="roster-subnav">
+          <button class="fees-subtab active" data-feestab="record">Record Payment</button>
+          <button class="fees-subtab" data-feestab="setfee">Set Fee</button>
+          <button class="fees-subtab" data-feestab="student">Student Status</button>
+          <button class="fees-subtab" data-feestab="class">Class Overview</button>
+          <button class="fees-subtab" data-feestab="totals">Totals</button>
+        </div>
+
+        <!-- ---------- RECORD PAYMENT ---------- -->
+        <div id="fees-record" class="fees-subpanel active">
+          <label for="feeRecClassSelect">Class</label>
+          <select id="feeRecClassSelect"><option value="">Select a class…</option></select>
+
+          <label for="feeRecStudentSelect">Student</label>
+          <select id="feeRecStudentSelect"><option value="">Select a class first…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="feeRecAmount">Amount</label>
+              <input type="number" id="feeRecAmount" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div>
+              <label for="feeRecType">Type</label>
+              <select id="feeRecType">
+                <option value="Tuition">Tuition</option>
+                <option value="Development Levy">Development Levy</option>
+                <option value="PTA Levy">PTA Levy</option>
+                <option value="Exam Fee">Exam Fee</option>
+                <option value="Uniform">Uniform</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label for="feeRecTerm">Term</label>
+              <select id="feeRecTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="feeRecSession">Session</label>
+              <input type="text" id="feeRecSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <label for="feeRecNotes">Notes (optional)</label>
+          <input type="text" id="feeRecNotes" placeholder="e.g. Part payment, receipt #1234">
+
+          <button type="button" id="feeRecordBtn" class="submit">Record Payment</button>
+          <div id="feeRecordMsg" class="msg"></div>
+        </div>
+
+        <!-- ---------- SET FEE ---------- -->
+        <div id="fees-setfee" class="fees-subpanel">
+          <p class="sub">Set how much each class owes for a term. This is what balances are calculated against.</p>
+
+          <label for="feeSetClassSelect">Class</label>
+          <select id="feeSetClassSelect"><option value="">Select a class…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="feeSetTerm">Term</label>
+              <select id="feeSetTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="feeSetSession">Session</label>
+              <input type="text" id="feeSetSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <label for="feeSetAmount">Fee Amount</label>
+          <input type="number" id="feeSetAmount" min="0" step="0.01" placeholder="0.00">
+
+          <button type="button" id="feeSetBtn" class="submit">Save Fee Amount</button>
+          <div id="feeSetMsg" class="msg"></div>
+
+          <div style="margin-top:16px;">
+            <a class="refresh-link" id="feeSetLoadAllBtn">View all class fee amounts for a term</a>
+            <div id="feeSetAllList" style="margin-top:10px;"></div>
+          </div>
+        </div>
+
+        <!-- ---------- STUDENT STATUS ---------- -->
+        <div id="fees-student" class="fees-subpanel">
+          <label for="feeStuClassSelect">Class</label>
+          <select id="feeStuClassSelect"><option value="">Select a class…</option></select>
+
+          <label for="feeStuStudentSelect">Student</label>
+          <select id="feeStuStudentSelect"><option value="">Select a class first…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="feeStuTerm">Term</label>
+              <select id="feeStuTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="feeStuSession">Session</label>
+              <input type="text" id="feeStuSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="feeStuLoadBtn" class="submit">Load Status</button>
+          <div id="feeStuMsg" class="msg"></div>
+          <div id="feeStuResult" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- ---------- CLASS OVERVIEW ---------- -->
+        <div id="fees-class" class="fees-subpanel">
+          <label for="feeClassSelect">Class</label>
+          <select id="feeClassSelect"><option value="">Select a class…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="feeClassTerm">Term</label>
+              <select id="feeClassTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="feeClassSession">Session</label>
+              <input type="text" id="feeClassSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="feeClassLoadBtn" class="submit">Load Class Overview</button>
+          <div id="feeClassMsg" class="msg"></div>
+          <div id="feeClassResult" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- ---------- TOTALS ---------- -->
+        <div id="fees-totals" class="fees-subpanel">
+          <div class="row2">
+            <div>
+              <label for="feeTotalsTerm">Term</label>
+              <select id="feeTotalsTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="feeTotalsSession">Session</label>
+              <input type="text" id="feeTotalsSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="feeTotalsLoadBtn" class="submit">Load Totals</button>
+          <div id="feeTotalsMsg" class="msg"></div>
+          <div id="feeTotalsResult" style="margin-top:16px;"></div>
+        </div>
       </div>
 
       <div id="section-roster" class="admin-section">
@@ -2102,10 +2271,11 @@
   };
 
   const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results"];
+  const CASHIER_ALLOWED_TOOLS = ["fees"];
 
-  function applyToolVisibility(isTeacherRole) {
+  function applyToolVisibility(allowedTools) {
     document.querySelectorAll(".tool-tile").forEach(tile => {
-      tile.style.display = (isTeacherRole && !TEACHER_ALLOWED_TOOLS.includes(tile.dataset.tool)) ? "none" : "";
+      tile.style.display = (allowedTools && !allowedTools.includes(tile.dataset.tool)) ? "none" : "";
     });
   }
 
@@ -2195,7 +2365,7 @@
       el("levelToggle").style.display = "flex";
     }
     applyLevelToggleUI();
-    applyToolVisibility(false);
+    applyToolVisibility(null);
     applyResultsTabVisibility(false);
 
     updateSyncBar();
@@ -2218,7 +2388,30 @@
     el("levelToggle").style.display = "none";
     el("levelBanner").style.display = "none";
 
-    applyToolVisibility(true);
+    applyToolVisibility(TEACHER_ALLOWED_TOOLS);
+    applyResultsTabVisibility(true);
+
+    updateSyncBar();
+
+    // Return to the tool grid on every fresh sign-in.
+    el("toolPanel").classList.remove("active");
+    el("toolGrid").style.display = "grid";
+  }
+
+  function showCashierDashboard(profile) {
+    el("loginView").style.display = "none";
+    el("dashboard").classList.remove("active");
+    el("adminShell").classList.add("active");
+
+    currentAdminRole = "cashier";
+    el("adminRoleSubtitle").textContent = "Cashier";
+    el("adminUserBadge").textContent = profile.name;
+
+    currentLevelFilter = "both";
+    el("levelToggle").style.display = "none";
+    el("levelBanner").style.display = "none";
+
+    applyToolVisibility(CASHIER_ALLOWED_TOOLS);
     applyResultsTabVisibility(true);
 
     updateSyncBar();
@@ -2233,6 +2426,8 @@
       showAdminDashboard(profile);
     } else if (type === "staff" && profile.role === "teacher") {
       showTeacherDashboard(profile);
+    } else if (type === "staff" && profile.role === "cashier") {
+      showCashierDashboard(profile);
     } else {
       showSimpleDashboard(type, profile);
     }
@@ -2389,6 +2584,10 @@
     }
     if (toolName === "manage-accounts") {
       loadManageAccounts();
+    }
+    if (toolName === "fees") {
+      populateFeeClassSelects();
+      document.querySelector('.fees-subtab[data-feestab="setfee"]').style.display = (currentAdminRole === "cashier") ? "none" : "";
     }
   }
 
@@ -3633,6 +3832,318 @@
       box.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
     }
   }
+
+
+  // =====================================================================
+  // Fees
+  // =====================================================================
+  async function populateFeeClassSelects() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    const options = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+    ["feeRecClassSelect", "feeSetClassSelect", "feeStuClassSelect", "feeClassSelect"].forEach(id => {
+      if (el(id)) el(id).innerHTML = options;
+    });
+  }
+
+  async function loadStudentsIntoSelect(classId, selectId) {
+    const select = el(selectId);
+    if (!classId) {
+      select.innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+    select.innerHTML = `<option value="">Loading…</option>`;
+    try {
+      const data = await cachedGetJson("/api/students?classId=" + classId);
+      const students = data.students || [];
+      select.innerHTML = students.length
+        ? `<option value="">Select a student…</option>` + students.map(s => `<option value="${s.id}">${s.name} (${s.admission_no})</option>`).join("")
+        : `<option value="">No students in this class</option>`;
+    } catch (err) {
+      select.innerHTML = `<option value="">Could not load students</option>`;
+    }
+  }
+
+  el("feeRecClassSelect").addEventListener("change", (e) => loadStudentsIntoSelect(e.target.value, "feeRecStudentSelect"));
+  el("feeStuClassSelect").addEventListener("change", (e) => loadStudentsIntoSelect(e.target.value, "feeStuStudentSelect"));
+
+  // ---------- Fees: sub-tab switching ----------
+  document.querySelectorAll(".fees-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".fees-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".fees-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("fees-" + btn.dataset.feestab).classList.add("active");
+    });
+  });
+
+  // ---------- Fees: record a payment (always live — never offline-queued) ----------
+  el("feeRecordBtn").addEventListener("click", async () => {
+    clearMsg("feeRecordMsg");
+    const studentId = el("feeRecStudentSelect").value;
+    const amount = el("feeRecAmount").value;
+    const type = el("feeRecType").value;
+    const term = el("feeRecTerm").value;
+    const session = el("feeRecSession").value.trim();
+    const notes = el("feeRecNotes").value.trim();
+
+    if (!studentId || !amount || !term || !session) {
+      showMsg("feeRecordMsg", "Please select a student, enter an amount, and fill in term and session.", "error");
+      return;
+    }
+
+    const btn = el("feeRecordBtn");
+    btn.disabled = true;
+
+    try {
+      const result = await submitOrQueue(
+        "POST",
+        "/api/fees/payments",
+        { studentId, amount, type, term, session, notes: notes || null },
+        "Fee payment",
+        { allowOffline: false }
+      );
+
+      if (!result.ok) {
+        showMsg("feeRecordMsg", result.data.error || "Could not record payment.", "error");
+        return;
+      }
+
+      showMsg("feeRecordMsg", result.data.message || "Payment recorded.", "success");
+      el("feeRecAmount").value = "";
+      el("feeRecNotes").value = "";
+    } catch (err) {
+      showMsg("feeRecordMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Fees: set fee amount for a class/term ----------
+  el("feeSetBtn").addEventListener("click", async () => {
+    clearMsg("feeSetMsg");
+    const classId = el("feeSetClassSelect").value;
+    const term = el("feeSetTerm").value;
+    const session = el("feeSetSession").value.trim();
+    const amount = el("feeSetAmount").value;
+
+    if (!classId || !term || !session || !amount) {
+      showMsg("feeSetMsg", "Please fill in class, term, session, and amount.", "error");
+      return;
+    }
+
+    const btn = el("feeSetBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/fee-structures", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ classId, term, session, amount })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("feeSetMsg", data.error || "Could not save fee amount.", "error");
+        return;
+      }
+
+      showMsg("feeSetMsg", data.message || "Fee amount saved.", "success");
+    } catch (err) {
+      showMsg("feeSetMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  el("feeSetLoadAllBtn").addEventListener("click", async () => {
+    const term = el("feeSetTerm").value;
+    const session = el("feeSetSession").value.trim();
+    const box = el("feeSetAllList");
+
+    if (!term || !session) {
+      box.innerHTML = `<p class="msg error">Select a term and enter a session first.</p>`;
+      return;
+    }
+
+    box.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/fee-structures?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        box.innerHTML = `<p class="msg error">${data.error || "Could not load fee amounts."}</p>`;
+        return;
+      }
+
+      const classes = data.classes || [];
+      box.innerHTML = classes.map(c => `
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0e6c8;">
+          <span>${c.class_name}</span>
+          <span>${c.amount !== null ? Number(c.amount).toLocaleString() : "Not set"}</span>
+        </div>
+      `).join("");
+    } catch (err) {
+      box.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+    }
+  });
+
+  // ---------- Fees: student status ----------
+  el("feeStuLoadBtn").addEventListener("click", async () => {
+    clearMsg("feeStuMsg");
+    const studentId = el("feeStuStudentSelect").value;
+    const term = el("feeStuTerm").value;
+    const session = el("feeStuSession").value.trim();
+    const result = el("feeStuResult");
+
+    if (!studentId || !term || !session) {
+      showMsg("feeStuMsg", "Please select a student, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("feeStuLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/fees/student/" + studentId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("feeStuMsg", data.error || "Could not load fee status.", "error");
+        return;
+      }
+
+      const transactions = data.transactions || [];
+      result.innerHTML = `
+        <div class="roster-item">
+          <p class="roster-item-name">${data.studentName}</p>
+          <p class="roster-item-meta">
+            Fee: ${Number(data.feeAmount).toLocaleString()} ·
+            Paid: ${Number(data.totalPaid).toLocaleString()} ·
+            Balance: ${Number(data.balance).toLocaleString()}
+          </p>
+        </div>
+        <div style="margin-top:10px;">
+          ${transactions.length ? transactions.map(t => `
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
+              <span>${new Date(t.recorded_at).toLocaleDateString()} — ${t.type}${t.notes ? " (" + t.notes + ")" : ""}</span>
+              <span>${Number(t.amount).toLocaleString()}</span>
+            </div>
+          `).join("") : `<p style="color:#999;">No payments recorded yet.</p>`}
+        </div>
+      `;
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("feeStuMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Fees: class overview ----------
+  el("feeClassLoadBtn").addEventListener("click", async () => {
+    clearMsg("feeClassMsg");
+    const classId = el("feeClassSelect").value;
+    const term = el("feeClassTerm").value;
+    const session = el("feeClassSession").value.trim();
+    const result = el("feeClassResult");
+
+    if (!classId || !term || !session) {
+      showMsg("feeClassMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("feeClassLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/fees/class/" + classId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("feeClassMsg", data.error || "Could not load class overview.", "error");
+        return;
+      }
+
+      const students = data.students || [];
+      result.innerHTML = `
+        <p style="margin-bottom:10px;">Fee amount for this class: <strong>${Number(data.feeAmount).toLocaleString()}</strong></p>
+        ${students.map(s => `
+          <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
+            <span>${s.name}</span>
+            <span>Paid: ${Number(s.paid).toLocaleString()} · Balance: ${Number(s.balance).toLocaleString()}</span>
+          </div>
+        `).join("")}
+      `;
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("feeClassMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Fees: collection totals ----------
+  el("feeTotalsLoadBtn").addEventListener("click", async () => {
+    clearMsg("feeTotalsMsg");
+    const term = el("feeTotalsTerm").value;
+    const session = el("feeTotalsSession").value.trim();
+    const result = el("feeTotalsResult");
+
+    if (!term || !session) {
+      showMsg("feeTotalsMsg", "Please select a term and enter a session.", "error");
+      return;
+    }
+
+    const btn = el("feeTotalsLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/fees/totals?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("feeTotalsMsg", data.error || "Could not load totals.", "error");
+        return;
+      }
+
+      result.innerHTML = `
+        <div class="roster-item"><p class="roster-item-name">Today</p><p class="roster-item-meta">${Number(data.today.total).toLocaleString()} (${data.today.count} payment(s))</p></div>
+        <div class="roster-item"><p class="roster-item-name">Last 7 days</p><p class="roster-item-meta">${Number(data.week.total).toLocaleString()} (${data.week.count} payment(s))</p></div>
+        <div class="roster-item"><p class="roster-item-name">This month</p><p class="roster-item-meta">${Number(data.month.total).toLocaleString()} (${data.month.count} payment(s))</p></div>
+        <div class="roster-item"><p class="roster-item-name">Whole term</p><p class="roster-item-meta">${Number(data.termTotal.total).toLocaleString()} (${data.termTotal.count} payment(s))</p></div>
+      `;
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("feeTotalsMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
 
   // ---------- Assignments: sub-tab switching (Create / View & Grade) ----------
