@@ -1328,6 +1328,7 @@
           <button class="roster-subtab active" data-rostertab="classes">Classes</button>
           <button class="roster-subtab" data-rostertab="students">Students</button>
           <button class="roster-subtab" data-rostertab="subjects">Subjects</button>
+          <button class="roster-subtab" data-rostertab="teachers">Teachers</button>
         </div>
 
         <!-- ---------- CLASSES ---------- -->
@@ -1477,6 +1478,42 @@
             <div id="assignSubjectMsg" class="msg"></div>
 
             <div id="classSubjectsList" style="margin-top:16px;"></div>
+          </div>
+        </div>
+
+        <!-- ---------- TEACHERS ---------- -->
+        <div id="roster-teachers" class="roster-subpanel">
+          <h4 style="margin-top:0;">Assign a Teacher</h4>
+          <p class="sub">Pick a teacher, then a class, then a subject taught in that class.</p>
+
+          <label for="taTeacherSelect">Teacher</label>
+          <select id="taTeacherSelect">
+            <option value="">Select a teacher…</option>
+          </select>
+
+          <label for="taClassSelect">Class</label>
+          <select id="taClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <label for="taSubjectSelect">Subject</label>
+          <select id="taSubjectSelect">
+            <option value="">Select a class first…</option>
+          </select>
+
+          <button type="button" id="taAssignBtn" class="submit">Assign Teacher</button>
+          <div id="taAssignMsg" class="msg"></div>
+
+          <div class="pin-gen-box">
+            <h4>View a Teacher's Assignments</h4>
+
+            <label for="taViewTeacherSelect">Teacher</label>
+            <select id="taViewTeacherSelect">
+              <option value="">Select a teacher…</option>
+            </select>
+
+            <div id="taViewMsg" class="msg"></div>
+            <div id="taAssignmentsList" style="margin-top:16px;"></div>
           </div>
         </div>
       </div>
@@ -2132,6 +2169,9 @@
     el("viewClassSelect").innerHTML = `<option value="">Select a class…</option>` + classes.map(c =>
       `<option value="${c.id}" data-level="${c.level}">${c.name} (${c.level})</option>`
     ).join("");
+
+    if (el("taClassSelect")) populateTaClassSelect();
+    if (el("taTeacherSelect")) populateTeacherSelects();
   }
 
   el("addStudentForm").addEventListener("submit", async (e) => {
@@ -2642,6 +2682,174 @@
     } finally {
       btn.disabled = false;
     }
+  });
+
+  // ---------- Roster: teacher assignments ----------
+  async function fetchTeachers() {
+    const res = await fetch(API_BASE + "/api/teachers", { method: "GET", headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load teachers.");
+    return data.teachers || [];
+  }
+
+  async function populateTeacherSelects() {
+    let teachers = [];
+    try {
+      teachers = await fetchTeachers();
+    } catch (err) {
+      return;
+    }
+    const options = `<option value="">Select a teacher…</option>` +
+      teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+    if (el("taTeacherSelect")) el("taTeacherSelect").innerHTML = options;
+    if (el("taViewTeacherSelect")) el("taViewTeacherSelect").innerHTML = options;
+  }
+
+  async function populateTaClassSelect() {
+    if (!el("taClassSelect")) return;
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("taClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  async function loadTaSubjectsForClass(classId) {
+    const subjectSelect = el("taSubjectSelect");
+    if (!classId) {
+      subjectSelect.innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+    subjectSelect.innerHTML = `<option value="">Loading…</option>`;
+    try {
+      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load subjects.");
+      const subjects = data.subjects || [];
+      subjectSelect.innerHTML = subjects.length
+        ? `<option value="">Select a subject…</option>` + subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+        : `<option value="">No subjects assigned to this class yet</option>`;
+    } catch (err) {
+      subjectSelect.innerHTML = `<option value="">Could not load subjects</option>`;
+    }
+  }
+
+  el("taClassSelect").addEventListener("change", (e) => {
+    loadTaSubjectsForClass(e.target.value);
+  });
+
+  el("taAssignBtn").addEventListener("click", async () => {
+    clearMsg("taAssignMsg");
+    const teacherId = el("taTeacherSelect").value;
+    const classId = el("taClassSelect").value;
+    const subjectId = el("taSubjectSelect").value;
+
+    if (!teacherId || !classId || !subjectId) {
+      showMsg("taAssignMsg", "Please select a teacher, class, and subject.", "error");
+      return;
+    }
+
+    const btn = el("taAssignBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + "/api/teacher-assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ teacherId, classId, subjectId })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("taAssignMsg", data.error || "Could not assign teacher.", "error");
+        return;
+      }
+
+      showMsg("taAssignMsg", data.message || "Teacher assigned.", "success");
+      el("taSubjectSelect").value = "";
+      if (el("taViewTeacherSelect").value === teacherId) {
+        loadTeacherAssignments(teacherId);
+      }
+    } catch (err) {
+      showMsg("taAssignMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function loadTeacherAssignments(teacherId) {
+    clearMsg("taViewMsg");
+    const list = el("taAssignmentsList");
+
+    if (!teacherId) {
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetch(API_BASE + "/api/teacher-assignments?teacherId=" + teacherId, {
+        method: "GET",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("taViewMsg", data.error || "Could not load assignments.", "error");
+        return;
+      }
+
+      const assignments = data.assignments || [];
+      if (!assignments.length) {
+        list.innerHTML = `<div class="empty-state">This teacher has no assignments yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = assignments.map(a => `
+        <div class="roster-item" data-assignment-id="${a.id}">
+          <p class="roster-item-name">${a.class_name}</p>
+          <p class="roster-item-meta">${a.subject_name}</p>
+          <a class="delete-link" data-id="${a.id}">Remove</a>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".delete-link").forEach(link => {
+        link.addEventListener("click", () => removeTeacherAssignment(link.dataset.id, teacherId));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("taViewMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  async function removeTeacherAssignment(assignmentId, teacherId) {
+    if (!confirm("Remove this assignment?")) return;
+    try {
+      const res = await fetch(API_BASE + "/api/teacher-assignments/" + assignmentId, {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("taViewMsg", data.error || "Could not remove assignment.", "error");
+        return;
+      }
+      loadTeacherAssignments(teacherId);
+    } catch (err) {
+      showMsg("taViewMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("taViewTeacherSelect").addEventListener("change", (e) => {
+    loadTeacherAssignments(e.target.value);
   });
 
   // ---------- Attendance ----------
