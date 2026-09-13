@@ -2208,7 +2208,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/login", {
+      const res = await fetchWithTimeout(API_BASE + "/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2240,7 +2240,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/signup", {
+      const res = await fetchWithTimeout(API_BASE + "/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2275,7 +2275,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/student-login", {
+      const res = await fetchWithTimeout(API_BASE + "/api/student-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2466,7 +2466,7 @@
     }
 
     try {
-      const res = await fetch(API_BASE + "/api/approvals/" + id, {
+      const res = await fetchWithTimeout(API_BASE + "/api/approvals/" + id, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body)
@@ -2541,7 +2541,7 @@
     if (!confirm(`Delete class "${name}"? This can't be undone.`)) return;
     clearMsg("addClassMsg");
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -2570,7 +2570,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/classes", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
@@ -2704,7 +2704,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/students?classId=" + classId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/students?classId=" + classId, {
         method: "GET",
         headers: authHeaders()
       });
@@ -2753,7 +2753,7 @@
     if (!confirm(`Remove "${name}" from the roster? Their attendance/assignment history is kept, but they won't be able to sign in anymore.`)) return;
     clearMsg("studentsMsg");
     try {
-      const res = await fetch(API_BASE + "/api/students/" + studentId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -2823,7 +2823,7 @@
           return;
         }
 
-        const res = await fetch(API_BASE + "/api/students/" + studentId + "/pin", {
+        const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId + "/pin", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({ term, session })
@@ -2886,7 +2886,7 @@
             continue;
           }
           try {
-            const res = await fetch(API_BASE + "/api/students/" + s.id + "/pin", {
+            const res = await fetchWithTimeout(API_BASE + "/api/students/" + s.id + "/pin", {
               method: "POST",
               headers: { "Content-Type": "application/json", ...authHeaders() },
               body: JSON.stringify({ term, session })
@@ -2980,7 +2980,7 @@
     if (!confirm(`Delete subject "${name}"? This can't be undone.`)) return;
     clearMsg("addSubjectMsg");
     try {
-      const res = await fetch(API_BASE + "/api/subjects/" + subjectId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/subjects/" + subjectId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -3004,7 +3004,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/subjects", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
@@ -3055,7 +3055,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", {
         method: "GET",
         headers: authHeaders()
       });
@@ -3092,7 +3092,7 @@
 
   async function removeSubjectFromClass(classId, subjectId) {
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects/" + subjectId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects/" + subjectId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -3126,7 +3126,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ subjectId })
@@ -3187,7 +3187,7 @@
     }
     subjectSelect.innerHTML = `<option value="">Loading…</option>`;
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", {
         method: "GET",
         headers: authHeaders()
       });
@@ -3221,7 +3221,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/teacher-assignments", {
+      const res = await fetchWithTimeout(API_BASE + "/api/teacher-assignments", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ teacherId, classId, subjectId })
@@ -3257,7 +3257,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/teacher-assignments?teacherId=" + teacherId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/teacher-assignments?teacherId=" + teacherId, {
         method: "GET",
         headers: authHeaders()
       });
@@ -3295,7 +3295,7 @@
   async function removeTeacherAssignment(assignmentId, teacherId) {
     if (!confirm("Remove this assignment?")) return;
     try {
-      const res = await fetch(API_BASE + "/api/teacher-assignments/" + assignmentId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/teacher-assignments/" + assignmentId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -3385,7 +3385,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/attendance?classId=" + classId + "&date=" + date, {
+      const res = await fetchWithTimeout(API_BASE + "/api/attendance?classId=" + classId + "&date=" + date, {
         method: "GET",
         headers: authHeaders()
       });
@@ -3504,7 +3504,7 @@
     }
 
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", {
         method: "GET",
         headers: authHeaders()
       });
@@ -3530,7 +3530,7 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/assignments", {
+      const res = await fetchWithTimeout(API_BASE + "/api/assignments", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
@@ -3635,7 +3635,7 @@
     if (!confirm(`Delete assignment "${title}"? This also removes all student submissions for it.`)) return;
     clearMsg("loadAssignmentsMsg");
     try {
-      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/assignments/" + assignmentId, {
         method: "DELETE",
         headers: authHeaders()
       });
@@ -3659,7 +3659,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId + "/submissions", {
+      const res = await fetchWithTimeout(API_BASE + "/api/assignments/" + assignmentId + "/submissions", {
         method: "GET",
         headers: authHeaders()
       });
@@ -3711,7 +3711,7 @@
     clearMsg("submissionsMsg");
 
     try {
-      const res = await fetch(API_BASE + "/api/assignments/" + assignmentId + "/submissions/" + studentId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/assignments/" + assignmentId + "/submissions/" + studentId, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ status, remark: remark || null })
@@ -3783,7 +3783,7 @@
     }
 
     try {
-      const res = await fetch(API_BASE + "/api/classes/" + classId + "/subjects", {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", {
         method: "GET",
         headers: authHeaders()
       });
@@ -3990,7 +3990,7 @@
     clearMsg("pendingResultsMsg");
 
     try {
-      const res = await fetch(API_BASE + "/api/results/" + resultId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/results/" + resultId, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ status })
@@ -4027,7 +4027,7 @@
     if (!confirm("Approve every pending result for this class/term/session?")) return;
 
     try {
-      const res = await fetch(API_BASE + "/api/results/approve-class", {
+      const res = await fetchWithTimeout(API_BASE + "/api/results/approve-class", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ classId, term, session })
@@ -4173,7 +4173,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/admissions?status=pending", {
+      const res = await fetchWithTimeout(API_BASE + "/api/admissions?status=pending", {
         method: "GET",
         headers: authHeaders()
       });
@@ -4216,7 +4216,7 @@
     }
 
     try {
-      const res = await fetch(API_BASE + "/api/admissions/" + applicationId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/admissions/" + applicationId, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ action: "approve", classId })
@@ -4240,7 +4240,7 @@
     clearMsg("admissionsMsg");
 
     try {
-      const res = await fetch(API_BASE + "/api/admissions/" + applicationId, {
+      const res = await fetchWithTimeout(API_BASE + "/api/admissions/" + applicationId, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ action: "reject" })
@@ -4268,7 +4268,7 @@
     list.innerHTML = `<div class="empty-state">Loading…</div>`;
 
     try {
-      const res = await fetch(API_BASE + "/api/admissions?status=" + status, {
+      const res = await fetchWithTimeout(API_BASE + "/api/admissions?status=" + status, {
         method: "GET",
         headers: authHeaders()
       });
