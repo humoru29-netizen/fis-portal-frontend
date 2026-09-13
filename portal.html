@@ -324,6 +324,31 @@
     font-size: 12.5px;
   }
 
+  .sync-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 0.85em;
+    background: #fff8e1;
+    border-bottom: 1px solid #f0d97a;
+    color: #6b5900;
+  }
+  .sync-bar.offline { background: #fdecea; border-bottom-color: #f5b3ac; color: #7a1f1f; }
+  .sync-bar.synced { background: #e9f7ef; border-bottom-color: #b7e4c7; color: #1e5631; }
+  .sync-bar button {
+    width: auto;
+    margin: 0;
+    padding: 5px 12px;
+    font-size: 0.85em;
+    background: var(--maroon-dark, #7a1f2b);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
   .admin-logout-btn {
     background: var(--ivory);
     color: var(--maroon-dark);
@@ -1124,6 +1149,11 @@
     </div>
   </div>
 
+  <div class="sync-bar" id="syncBar">
+    <span id="syncBarText">Checking connection…</span>
+    <button type="button" id="syncNowBtn" style="display:none;">Sync Now</button>
+  </div>
+
   <div class="level-toggle" id="levelToggle">
     <button data-level="primary">Primary View</button>
     <button data-level="secondary">Secondary View</button>
@@ -1665,6 +1695,201 @@
     return token ? { "Authorization": "Bearer " + token } : {};
   }
 
+  // =====================================================================
+  // OFFLINE QUEUE — lets data-entry forms (admissions apply, attendance,
+  // results entry, student registration, PIN generation) save locally
+  // when there's no connection, then sync automatically when the
+  // connection returns, or when the user taps "Sync Now".
+  //
+  // NOTE: Cashier/fee entry must NOT use this — pass allowOffline:false
+  // to submitOrQueue so those always require a live connection.
+  // =====================================================================
+  const OFFLINE_QUEUE_KEY = "fis_offline_queue";
+
+  function loadOfflineQueue() {
+    try {
+      return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveOfflineQueue(queue) {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    updateSyncBar();
+  }
+
+  function queueLength() {
+    return loadOfflineQueue().length;
+  }
+
+  function newLocalId() {
+    return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("local-" + Date.now() + "-" + Math.random().toString(16).slice(2));
+  }
+
+  function enqueueOfflineRequest(method, path, body, description) {
+    const queue = loadOfflineQueue();
+    queue.push({ id: newLocalId(), method, path, body, description, queuedAt: new Date().toISOString() });
+    saveOfflineQueue(queue);
+  }
+
+  /**
+   * Submit a data-entry request. If the device is offline, or the
+   * request can't reach the server (network error), it is queued on
+   * this device and sent automatically once online, or via "Sync Now".
+   * A real server-side rejection (validation error, 403, etc.) is
+   * never queued — it's surfaced immediately since retrying it later
+   * wouldn't change the outcome.
+   *
+   * Pass { allowOffline: false } for anything that must always be
+   * entered live (e.g. cashier/fee transactions).
+   */
+  async function submitOrQueue(method, path, body, description, opts) {
+    const allowOffline = !opts || opts.allowOffline !== false;
+
+    if (allowOffline && !navigator.onLine) {
+      enqueueOfflineRequest(method, path, body, description);
+      return { queued: true, ok: true, data: {} };
+    }
+
+    try {
+      const res = await fetch(API_BASE + path, {
+        method,
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        return { queued: false, ok: false, data };
+      }
+      return { queued: false, ok: true, data };
+    } catch (networkErr) {
+      if (allowOffline) {
+        enqueueOfflineRequest(method, path, body, description);
+        return { queued: true, ok: true, data: {} };
+      }
+      return { queued: false, ok: false, data: { error: "Could not reach the portal server. Check your connection." } };
+    }
+  }
+
+  async function syncOfflineQueue() {
+    const queue = loadOfflineQueue();
+    const bar = el("syncBar");
+    if (!queue.length) { updateSyncBar(); return; }
+    if (!navigator.onLine) { updateSyncBar(); return; }
+
+    const btn = el("syncNowBtn");
+    if (btn) btn.disabled = true;
+    if (bar) el("syncBarText").textContent = "Syncing " + queue.length + " item(s)…";
+
+    const failed = [];
+    let stoppedAt = queue.length;
+    let sessionExpired = false;
+
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      try {
+        const res = await fetch(API_BASE + item.path, {
+          method: item.method,
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(item.body)
+        });
+
+        if (res.status === 401) {
+          sessionExpired = true;
+          stoppedAt = i;
+          break;
+        }
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          failed.push({ description: item.description, error: data.error || ("Server error " + res.status) });
+          continue; // real rejection — drop it, keep going with the rest
+        }
+        // success — drops off the queue by not being kept below
+      } catch (networkErr) {
+        stoppedAt = i; // connection dropped mid-sync — keep this item and the rest
+        break;
+      }
+    }
+
+    const remaining = queue.slice(stoppedAt);
+    saveOfflineQueue(remaining);
+
+    if (bar) {
+      if (sessionExpired) {
+        el("syncBarText").textContent = "Session expired — please log in again to finish syncing (" + remaining.length + " item(s) waiting).";
+      } else if (failed.length) {
+        el("syncBarText").textContent = failed.length + " item(s) failed and were discarded: " + failed.map(f => f.description + " — " + f.error).join("; ");
+      } else {
+        updateSyncBar();
+      }
+    }
+
+    if (btn) btn.disabled = false;
+  }
+
+  function updateSyncBar() {
+    const bar = el("syncBar");
+    if (!bar) return; // not on a page with the sync bar (e.g. public apply form)
+
+    const text = el("syncBarText");
+    const btn = el("syncNowBtn");
+    const pending = queueLength();
+    const online = navigator.onLine;
+
+    bar.classList.remove("offline", "synced");
+
+    if (!online) {
+      bar.classList.add("offline");
+      text.textContent = pending
+        ? "Offline — " + pending + " item(s) saved on this device, waiting to sync."
+        : "Offline — entries will be saved on this device until you're back online.";
+      btn.style.display = "none";
+    } else if (pending) {
+      text.textContent = pending + " item(s) waiting to sync.";
+      btn.style.display = "inline-block";
+    } else {
+      bar.classList.add("synced");
+      text.textContent = "All entries synced.";
+      btn.style.display = "none";
+    }
+  }
+
+  window.addEventListener("online", () => { updateSyncBar(); syncOfflineQueue(); });
+  window.addEventListener("offline", updateSyncBar);
+
+  // ---------------------------------------------------------------------
+  // Cached GET wrapper — lets dropdowns (classes, subjects, teachers)
+  // keep working offline by falling back to the last successful result.
+  // ---------------------------------------------------------------------
+  function cacheKeyFor(path) {
+    return "fis_cache_" + path.replace(/[^a-zA-Z0-9]/g, "_");
+  }
+
+  async function cachedGetJson(path) {
+    const cacheKey = cacheKeyFor(path);
+
+    if (!navigator.onLine) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached);
+      throw new Error("You're offline and this hasn't been loaded on this device before.");
+    }
+
+    try {
+      const res = await fetch(API_BASE + path, { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed.");
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      return data;
+    } catch (networkErr) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached);
+      throw networkErr;
+    }
+  }
+
   // ---------- Tab switching (Staff / Student) ----------
   document.querySelectorAll("#loginTabs .tab").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1702,10 +1927,10 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/admissions/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const result = await submitOrQueue(
+        "POST",
+        "/api/admissions/apply",
+        {
           studentName: el("apStudentName").value.trim(),
           dob: el("apDob").value || null,
           gender: el("apGender").value || null,
@@ -1717,16 +1942,20 @@
           address: el("apAddress").value.trim() || null,
           priorSchool: el("apPriorSchool").value.trim() || null,
           healthNotes: el("apHealthNotes").value.trim() || null
-        })
-      });
-      const data = await res.json();
+        },
+        "Admission application — " + el("apStudentName").value.trim()
+      );
 
-      if (!res.ok) {
-        showMsg("admissionApplyMsg", data.error || "Could not submit application.", "error");
+      if (!result.ok) {
+        showMsg("admissionApplyMsg", result.data.error || "Could not submit application.", "error");
         return;
       }
 
-      showMsg("admissionApplyMsg", data.message || "Application submitted.", "success");
+      if (result.queued) {
+        showMsg("admissionApplyMsg", "Saved on this device. It will be submitted automatically once you're online — or reopen this page later to retry.", "success");
+      } else {
+        showMsg("admissionApplyMsg", result.data.message || "Application submitted.", "success");
+      }
       e.target.reset();
     } catch (err) {
       showMsg("admissionApplyMsg", "Could not reach the portal server. Check your connection.", "error");
@@ -1876,6 +2105,8 @@
     applyToolVisibility(false);
     applyResultsTabVisibility(false);
 
+    updateSyncBar();
+
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
     el("toolGrid").style.display = "grid";
@@ -1896,6 +2127,8 @@
 
     applyToolVisibility(true);
     applyResultsTabVisibility(true);
+
+    updateSyncBar();
 
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
@@ -2019,6 +2252,7 @@
     showLoginView();
   }
   el("logoutBtn").addEventListener("click", doLogout);
+  el("syncNowBtn").addEventListener("click", syncOfflineQueue);
   el("adminLogoutBtn").addEventListener("click", doLogout);
 
   // ---------- Tool tiles: open a section, hide the grid ----------
@@ -2210,12 +2444,8 @@
 
   async function fetchClasses() {
     const level = classesQueryLevel();
-    const url = level
-      ? API_BASE + "/api/classes?level=" + level
-      : API_BASE + "/api/classes";
-    const res = await fetch(url, { method: "GET", headers: authHeaders() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not load classes.");
+    const path = level ? "/api/classes?level=" + level : "/api/classes";
+    const data = await cachedGetJson(path);
     return data.classes || [];
   }
 
@@ -2356,30 +2586,34 @@
     }
 
     try {
-      const res = await fetch(API_BASE + "/api/students", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
+      const result = await submitOrQueue(
+        "POST",
+        "/api/students",
+        {
           name: el("stuNameInput").value.trim(),
           classId: classSelect.value,
           level: classLevel,
           sessionJoined: el("stuSessionJoined").value.trim() || null,
           guardianName: el("stuGuardianName").value.trim() || null,
           guardianPhone: el("stuGuardianPhone").value.trim() || null
-        })
-      });
-      const data = await res.json();
+        },
+        "Add student — " + el("stuNameInput").value.trim()
+      );
 
-      if (!res.ok) {
-        showMsg("addStudentMsg", data.error || "Could not add student.", "error");
+      if (!result.ok) {
+        showMsg("addStudentMsg", result.data.error || "Could not add student.", "error");
         return;
       }
 
-      showMsg("addStudentMsg", "Student added. Admission number: " + data.admissionNo, "success");
+      if (result.queued) {
+        showMsg("addStudentMsg", "Saved offline — this student will be added once synced. Admission number will be assigned at that time.", "success");
+      } else {
+        showMsg("addStudentMsg", "Student added. Admission number: " + result.data.admissionNo, "success");
+      }
       e.target.reset();
 
       // Refresh the students list if we're currently viewing that class.
-      if (el("viewClassSelect").value === classSelect.value) {
+      if (!result.queued && el("viewClassSelect").value === classSelect.value) {
         loadStudentsForClass(classSelect.value);
       }
     } catch (err) {
@@ -2633,12 +2867,8 @@
   // ---------- Roster: subjects ----------
   async function fetchSubjects() {
     const level = classesQueryLevel();
-    const url = level
-      ? API_BASE + "/api/subjects?level=" + level
-      : API_BASE + "/api/subjects";
-    const res = await fetch(url, { method: "GET", headers: authHeaders() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not load subjects.");
+    const path = level ? "/api/subjects?level=" + level : "/api/subjects";
+    const data = await cachedGetJson(path);
     return data.subjects || [];
   }
 
@@ -2851,9 +3081,7 @@
 
   // ---------- Roster: teacher assignments ----------
   async function fetchTeachers() {
-    const res = await fetch(API_BASE + "/api/teachers", { method: "GET", headers: authHeaders() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not load teachers.");
+    const data = await cachedGetJson("/api/teachers");
     return data.teachers || [];
   }
 
@@ -3155,19 +3383,19 @@
     btn.disabled = true;
 
     try {
-      const res = await fetch(API_BASE + "/api/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ classId, date, term, session, records })
-      });
-      const data = await res.json();
+      const result = await submitOrQueue(
+        "POST",
+        "/api/attendance",
+        { classId, date, term, session, records },
+        "Attendance — " + date
+      );
 
-      if (!res.ok) {
-        showMsg("attendanceSaveMsg", data.error || "Could not save attendance.", "error");
+      if (!result.ok) {
+        showMsg("attendanceSaveMsg", result.data.error || "Could not save attendance.", "error");
         return;
       }
 
-      showMsg("attendanceSaveMsg", data.message || "Attendance saved.", "success");
+      showMsg("attendanceSaveMsg", result.queued ? "Saved offline — will sync automatically." : (result.data.message || "Attendance saved."), "success");
     } catch (err) {
       showMsg("attendanceSaveMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
@@ -3579,26 +3807,30 @@
           clearMsg("resultsLoadMsg");
 
           try {
-            const saveRes = await fetch(API_BASE + "/api/results", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...authHeaders() },
-              body: JSON.stringify({
-                studentId: row.dataset.studentId,
-                classId, subjectId, term, session,
-                ca1: row.querySelector(".ca1-input").value,
-                ca2: row.querySelector(".ca2-input").value,
-                exam: row.querySelector(".exam-input").value
-              })
-            });
-            const saveData = await saveRes.json();
+            const ca1 = row.querySelector(".ca1-input").value;
+            const ca2 = row.querySelector(".ca2-input").value;
+            const exam = row.querySelector(".exam-input").value;
 
-            if (!saveRes.ok) {
-              showMsg("resultsLoadMsg", saveData.error || "Could not save score.", "error");
+            const result = await submitOrQueue(
+              "POST",
+              "/api/results",
+              { studentId: row.dataset.studentId, classId, subjectId, term, session, ca1, ca2, exam },
+              "Result — " + (row.querySelector(".result-entry-name")?.textContent || row.dataset.studentId)
+            );
+
+            if (!result.ok) {
+              showMsg("resultsLoadMsg", result.data.error || "Could not save score.", "error");
               return;
             }
 
-            row.querySelector(".grade-value").textContent = saveData.grade || "—";
-            showMsg("resultsLoadMsg", "Saved.", "success");
+            if (result.queued) {
+              const total = (parseFloat(ca1) || 0) + (parseFloat(ca2) || 0) + (parseFloat(exam) || 0);
+              row.querySelector(".grade-value").textContent = computeGradeClient(total) + " (pending sync)";
+              showMsg("resultsLoadMsg", "Saved offline — will sync automatically.", "success");
+            } else {
+              row.querySelector(".grade-value").textContent = result.data.grade || "—";
+              showMsg("resultsLoadMsg", "Saved.", "success");
+            }
           } catch (err) {
             showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
           } finally {
