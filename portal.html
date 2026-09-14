@@ -567,7 +567,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab, .cbt-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -579,20 +579,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child, .cbt-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active, .cbt-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel, .rc-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel, .rc-subpanel, .cbt-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active, .rc-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active, .rc-subpanel.active, .cbt-subpanel.active {
     display: block;
   }
 
@@ -1131,6 +1131,34 @@
   <h2 id="dashGreeting">Welcome</h2>
   <p id="dashDetail">You are signed in.</p>
   <button id="logoutBtn">Sign Out</button>
+
+  <div id="studentCbtArea" style="display:none; margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
+    <h3>Available Tests</h3>
+    <a class="refresh-link" id="refreshStudentCbt">Refresh</a>
+    <div id="studentCbtMsg" class="msg"></div>
+    <div id="studentCbtList" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- ===== CBT TEST-TAKING VIEW (full screen, shown while a student is attempting a test) ===== -->
+<div id="cbtTakeView" style="display:none; width:100%; min-height:100vh; background:#f7f3ea; padding:16px; box-sizing:border-box;">
+  <div style="max-width:600px; margin:0 auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:#f7f3ea; padding:10px 0; border-bottom:2px solid #7a1f2b;">
+      <h3 id="cbtTakeTitle" style="margin:0;">Test</h3>
+      <div id="cbtTimer" style="font-weight:bold; font-size:1.1em; color:#7a1f2b;">--:--</div>
+    </div>
+
+    <div id="cbtTakeQuestions" style="margin-top:16px;"></div>
+
+    <button type="button" id="cbtSubmitBtn" class="submit" style="margin-top:16px;">Submit Test</button>
+    <div id="cbtTakeMsg" class="msg"></div>
+
+    <div id="cbtScoreResult" style="display:none; text-align:center; padding:30px 0;">
+      <h2 id="cbtScoreHeading">Score</h2>
+      <p id="cbtScoreDetail"></p>
+      <button type="button" id="cbtBackToDashboardBtn" class="submit" style="max-width:220px; margin:16px auto 0;">Back to Dashboard</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== ADMIN DASHBOARD ===== -->
@@ -1201,6 +1229,10 @@
       <button class="tool-tile" data-tool="report-card">
         <span class="tool-icon">🗂️</span>
         <span class="tool-label">Report Card</span>
+      </button>
+      <button class="tool-tile" data-tool="cbt">
+        <span class="tool-icon">💻</span>
+        <span class="tool-label">CBT</span>
       </button>
       <button class="tool-tile" data-tool="roster">
         <span class="tool-icon">🏫</span>
@@ -1767,6 +1799,118 @@
             <button type="button" id="rcBulkPrintBtn" class="submit" style="margin-top:14px;">Print Selected Report Cards</button>
             <div id="rcBulkPrintMsg" class="msg"></div>
           </div>
+        </div>
+      </div>
+
+      <div id="section-cbt" class="admin-section">
+        <h3>CBT (Computer-Based Testing)</h3>
+        <p class="sub">Create timed multiple-choice / true-false tests. Students take them from their own login and get instant scores.</p>
+
+        <div class="roster-subnav">
+          <button class="cbt-subtab active" data-cbttab="tests">Tests</button>
+          <button class="cbt-subtab" data-cbttab="questions">Manage Questions</button>
+          <button class="cbt-subtab" data-cbttab="results">Results</button>
+        </div>
+
+        <!-- ---------- TESTS LIST / CREATE ---------- -->
+        <div id="cbt-tests" class="cbt-subpanel active">
+          <label for="cbtClassSelect">Class</label>
+          <select id="cbtClassSelect"><option value="">Select a class…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="cbtTerm">Term</label>
+              <select id="cbtTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="cbtSession">Session</label>
+              <input type="text" id="cbtSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="cbtLoadTestsBtn" class="submit">Load Tests</button>
+          <div id="cbtTestsMsg" class="msg"></div>
+          <div id="cbtTestsList" style="margin-top:14px;"></div>
+
+          <div class="pin-gen-box">
+            <h4>Create a New Test</h4>
+            <label for="cbtNewTitle">Title</label>
+            <input type="text" id="cbtNewTitle" placeholder="e.g. Mathematics Mid-Term CBT">
+
+            <label for="cbtNewSubject">Subject</label>
+            <select id="cbtNewSubject"><option value="">Select a class above first…</option></select>
+
+            <label for="cbtNewDuration">Duration (minutes)</label>
+            <input type="number" id="cbtNewDuration" min="1" placeholder="30">
+
+            <button type="button" id="cbtCreateTestBtn" class="submit">Create Test (as Draft)</button>
+            <div id="cbtCreateMsg" class="msg"></div>
+          </div>
+        </div>
+
+        <!-- ---------- MANAGE QUESTIONS ---------- -->
+        <div id="cbt-questions" class="cbt-subpanel">
+          <p class="sub">Pick a test from the Tests tab first (tap "Manage Questions" on a test).</p>
+          <div id="cbtActiveTestLabel" style="font-weight:bold; margin-bottom:10px;"></div>
+
+          <div id="cbtQuestionsList"></div>
+
+          <div class="pin-gen-box">
+            <h4>Add a Question</h4>
+            <label for="cbtQType">Type</label>
+            <select id="cbtQType">
+              <option value="mcq">Multiple Choice</option>
+              <option value="true_false">True / False</option>
+            </select>
+
+            <label for="cbtQText">Question</label>
+            <input type="text" id="cbtQText" placeholder="Type the question…">
+
+            <div id="cbtMcqOptions">
+              <label for="cbtOptA">Option A</label>
+              <input type="text" id="cbtOptA">
+              <label for="cbtOptB">Option B</label>
+              <input type="text" id="cbtOptB">
+              <label for="cbtOptC">Option C (optional)</label>
+              <input type="text" id="cbtOptC">
+              <label for="cbtOptD">Option D (optional)</label>
+              <input type="text" id="cbtOptD">
+
+              <label for="cbtCorrectMcq">Correct Option</label>
+              <select id="cbtCorrectMcq">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+
+            <div id="cbtTfOptions" style="display:none;">
+              <label for="cbtCorrectTf">Correct Answer</label>
+              <select id="cbtCorrectTf">
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </div>
+
+            <label for="cbtQPoints">Points</label>
+            <input type="number" id="cbtQPoints" min="1" value="1">
+
+            <button type="button" id="cbtAddQuestionBtn" class="submit">Add Question</button>
+            <div id="cbtAddQuestionMsg" class="msg"></div>
+          </div>
+        </div>
+
+        <!-- ---------- RESULTS ---------- -->
+        <div id="cbt-results" class="cbt-subpanel">
+          <p class="sub">Pick a test from the Tests tab first (tap "View Results" on a test).</p>
+          <div id="cbtResultsLabel" style="font-weight:bold; margin-bottom:10px;"></div>
+          <div id="cbtResultsList"></div>
         </div>
       </div>
 
@@ -2347,19 +2491,25 @@
     el("loginView").style.display = "flex";
     el("dashboard").classList.remove("active");
     el("adminShell").classList.remove("active");
+    el("cbtTakeView").style.display = "none";
+    if (cbtTimerInterval) clearInterval(cbtTimerInterval);
   }
 
   function showSimpleDashboard(type, profile) {
     el("loginView").style.display = "none";
     el("adminShell").classList.remove("active");
+    el("cbtTakeView").style.display = "none";
     el("dashboard").classList.add("active");
 
     if (type === "staff") {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Signed in as " + profile.role.replace(/_/g, " ") + (profile.level ? " (" + profile.level + ")" : "");
+      el("studentCbtArea").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+      el("studentCbtArea").style.display = "block";
+      loadStudentCbtList();
     }
   }
 
@@ -2371,7 +2521,7 @@
     cashier: "Cashier"
   };
 
-  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "report-card"];
+  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "report-card", "cbt"];
   const CASHIER_ALLOWED_TOOLS = ["fees"];
 
   function applyToolVisibility(allowedTools) {
@@ -2692,6 +2842,9 @@
     }
     if (toolName === "report-card") {
       populateRcClassSelect();
+    }
+    if (toolName === "cbt") {
+      populateCbtClassSelect();
     }
   }
 
@@ -4718,6 +4871,575 @@
     } finally {
       btn.disabled = false;
     }
+  });
+
+
+  // =====================================================================
+  // CBT (Computer-Based Testing) — staff side
+  // =====================================================================
+  let cbtActiveTestId = null;
+  let cbtActiveTestLabel = "";
+
+  async function populateCbtClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("cbtClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("cbtClassSelect").addEventListener("change", async (e) => {
+    const classId = e.target.value;
+    const subjectSelect = el("cbtNewSubject");
+    if (!classId) {
+      subjectSelect.innerHTML = `<option value="">Select a class above first…</option>`;
+      return;
+    }
+    subjectSelect.innerHTML = `<option value="">Loading…</option>`;
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+      const subjects = data.subjects || [];
+      subjectSelect.innerHTML = subjects.length
+        ? `<option value="">Select a subject…</option>` + subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+        : `<option value="">No subjects assigned to this class</option>`;
+    } catch (err) {
+      subjectSelect.innerHTML = `<option value="">Could not load subjects</option>`;
+    }
+  });
+
+  // ---------- CBT: sub-tab switching ----------
+  document.querySelectorAll(".cbt-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".cbt-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".cbt-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("cbt-" + btn.dataset.cbttab).classList.add("active");
+    });
+  });
+
+  function switchCbtTab(tabName) {
+    document.querySelectorAll(".cbt-subtab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".cbt-subpanel").forEach(p => p.classList.remove("active"));
+    document.querySelector(`.cbt-subtab[data-cbttab="${tabName}"]`).classList.add("active");
+    el("cbt-" + tabName).classList.add("active");
+  }
+
+  // ---------- CBT: load tests for a class/term/session ----------
+  async function loadCbtTests() {
+    clearMsg("cbtTestsMsg");
+    const classId = el("cbtClassSelect").value;
+    const term = el("cbtTerm").value;
+    const session = el("cbtSession").value.trim();
+    const list = el("cbtTestsList");
+
+    if (!classId || !term || !session) {
+      showMsg("cbtTestsMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/cbt/tests?classId=" + classId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("cbtTestsMsg", data.error || "Could not load tests.", "error");
+        return;
+      }
+
+      const tests = data.tests || [];
+      if (!tests.length) {
+        list.innerHTML = `<div class="empty-state">No tests yet. Create one below.</div>`;
+        return;
+      }
+
+      list.innerHTML = tests.map(t => `
+        <div class="roster-item" data-test-id="${t.id}">
+          <p class="roster-item-name">${t.title} — ${t.subject_name}</p>
+          <p class="roster-item-meta">
+            ${t.duration_minutes} min · ${t.question_count} question(s) · ${t.submission_count} submission(s) ·
+            <strong style="color:${t.status === 'published' ? '#1e5631' : '#a06a00'};">${t.status}</strong>
+          </p>
+          <div class="row2" style="margin-top:8px;">
+            <button type="button" class="cbt-manage-btn" data-test-id="${t.id}" data-title="${t.title}">Manage Questions</button>
+            <button type="button" class="cbt-results-btn" data-test-id="${t.id}" data-title="${t.title}">View Results</button>
+          </div>
+          <div class="row2" style="margin-top:8px;">
+            <button type="button" class="cbt-toggle-btn" data-test-id="${t.id}" data-status="${t.status}">
+              ${t.status === "published" ? "Unpublish" : "Publish"}
+            </button>
+            <button type="button" class="cbt-delete-btn" data-test-id="${t.id}" data-title="${t.title}">Delete</button>
+          </div>
+          <div class="cbt-item-msg msg" data-test-id="${t.id}" style="margin-top:6px;"></div>
+        </div>
+      `).join("");
+
+      wireCbtTestListHandlers();
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("cbtTestsMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  function cbtItemMsg(testId, text, type) {
+    const box = document.querySelector(`.cbt-item-msg[data-test-id="${testId}"]`);
+    if (!box) return;
+    box.textContent = text;
+    box.className = "cbt-item-msg msg" + (type ? " " + type : "");
+  }
+
+  function wireCbtTestListHandlers() {
+    document.querySelectorAll(".cbt-manage-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        cbtActiveTestId = btn.dataset.testId;
+        cbtActiveTestLabel = btn.dataset.title;
+        el("cbtActiveTestLabel").textContent = "Managing: " + cbtActiveTestLabel;
+        switchCbtTab("questions");
+        loadCbtQuestions();
+      });
+    });
+
+    document.querySelectorAll(".cbt-results-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        el("cbtResultsLabel").textContent = "Results: " + btn.dataset.title;
+        switchCbtTab("results");
+        loadCbtResults(btn.dataset.testId);
+      });
+    });
+
+    document.querySelectorAll(".cbt-toggle-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const testId = btn.dataset.testId;
+        const newStatus = btn.dataset.status === "published" ? "draft" : "published";
+        btn.disabled = true;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + testId, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ status: newStatus })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            cbtItemMsg(testId, data.error || "Could not update test.", "error");
+            btn.disabled = false;
+            return;
+          }
+          loadCbtTests();
+        } catch (err) {
+          cbtItemMsg(testId, "Could not reach the portal server. Check your connection.", "error");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll(".cbt-delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm(`Delete "${btn.dataset.title}"? This removes its questions and any student submissions too.`)) return;
+        const testId = btn.dataset.testId;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + testId, { method: "DELETE", headers: authHeaders() });
+          const data = await res.json();
+          if (!res.ok) {
+            cbtItemMsg(testId, data.error || "Could not delete test.", "error");
+            return;
+          }
+          loadCbtTests();
+        } catch (err) {
+          cbtItemMsg(testId, "Could not reach the portal server. Check your connection.", "error");
+        }
+      });
+    });
+  }
+
+  el("cbtLoadTestsBtn").addEventListener("click", loadCbtTests);
+
+  // ---------- CBT: create a test ----------
+  el("cbtCreateTestBtn").addEventListener("click", async () => {
+    clearMsg("cbtCreateMsg");
+    const classId = el("cbtClassSelect").value;
+    const term = el("cbtTerm").value;
+    const session = el("cbtSession").value.trim();
+    const title = el("cbtNewTitle").value.trim();
+    const subjectId = el("cbtNewSubject").value;
+    const durationMinutes = el("cbtNewDuration").value;
+
+    if (!classId || !term || !session || !title || !subjectId || !durationMinutes) {
+      showMsg("cbtCreateMsg", "Please fill in class, term, session, title, subject, and duration.", "error");
+      return;
+    }
+
+    const btn = el("cbtCreateTestBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ title, classId, subjectId, term, session, durationMinutes })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("cbtCreateMsg", data.error || "Could not create test.", "error");
+        return;
+      }
+
+      showMsg("cbtCreateMsg", data.message || "Test created.", "success");
+      el("cbtNewTitle").value = "";
+      el("cbtNewDuration").value = "";
+      loadCbtTests();
+    } catch (err) {
+      showMsg("cbtCreateMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- CBT: manage questions ----------
+  el("cbtQType").addEventListener("change", (e) => {
+    const isMcq = e.target.value === "mcq";
+    el("cbtMcqOptions").style.display = isMcq ? "block" : "none";
+    el("cbtTfOptions").style.display = isMcq ? "none" : "block";
+  });
+
+  async function loadCbtQuestions() {
+    const list = el("cbtQuestionsList");
+    if (!cbtActiveTestId) {
+      list.innerHTML = `<div class="empty-state">Pick a test from the Tests tab first.</div>`;
+      return;
+    }
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = `<p class="msg error">${data.error || "Could not load questions."}</p>`;
+        return;
+      }
+
+      const questions = data.questions || [];
+      if (!questions.length) {
+        list.innerHTML = `<div class="empty-state">No questions yet. Add one below.</div>`;
+        return;
+      }
+
+      list.innerHTML = questions.map((q, i) => `
+        <div class="roster-item">
+          <p class="roster-item-name">${i + 1}. ${q.question_text}</p>
+          <p class="roster-item-meta">
+            ${q.type === "mcq"
+              ? `A: ${q.option_a || "—"} · B: ${q.option_b || "—"} · C: ${q.option_c || "—"} · D: ${q.option_d || "—"}`
+              : "True / False"}
+            &nbsp;·&nbsp; Correct: <strong>${q.correct_option}</strong> &nbsp;·&nbsp; ${q.points} point(s)
+          </p>
+          <a class="delete-link cbt-delete-question-link" data-question-id="${q.id}">Remove question</a>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".cbt-delete-question-link").forEach(link => {
+        link.addEventListener("click", async () => {
+          if (!confirm("Remove this question?")) return;
+          try {
+            const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions/" + link.dataset.questionId, {
+              method: "DELETE",
+              headers: authHeaders()
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data.error || "Could not remove question.");
+              return;
+            }
+            loadCbtQuestions();
+          } catch (err) {
+            alert("Could not reach the portal server. Check your connection.");
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+    }
+  }
+
+  el("cbtAddQuestionBtn").addEventListener("click", async () => {
+    clearMsg("cbtAddQuestionMsg");
+    if (!cbtActiveTestId) {
+      showMsg("cbtAddQuestionMsg", "Pick a test from the Tests tab first.", "error");
+      return;
+    }
+
+    const type = el("cbtQType").value;
+    const questionText = el("cbtQText").value.trim();
+    const points = el("cbtQPoints").value || 1;
+    const body = { questionText, type, points };
+
+    if (type === "mcq") {
+      body.optionA = el("cbtOptA").value.trim();
+      body.optionB = el("cbtOptB").value.trim();
+      body.optionC = el("cbtOptC").value.trim() || null;
+      body.optionD = el("cbtOptD").value.trim() || null;
+      body.correctOption = el("cbtCorrectMcq").value;
+    } else {
+      body.correctOption = el("cbtCorrectTf").value;
+    }
+
+    if (!questionText) {
+      showMsg("cbtAddQuestionMsg", "Please enter the question text.", "error");
+      return;
+    }
+
+    const btn = el("cbtAddQuestionBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("cbtAddQuestionMsg", data.error || "Could not add question.", "error");
+        return;
+      }
+
+      showMsg("cbtAddQuestionMsg", "Question added.", "success");
+      el("cbtQText").value = "";
+      el("cbtOptA").value = "";
+      el("cbtOptB").value = "";
+      el("cbtOptC").value = "";
+      el("cbtOptD").value = "";
+      loadCbtQuestions();
+    } catch (err) {
+      showMsg("cbtAddQuestionMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- CBT: results ----------
+  async function loadCbtResults(testId) {
+    const list = el("cbtResultsList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + testId + "/results", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = `<p class="msg error">${data.error || "Could not load results."}</p>`;
+        return;
+      }
+
+      const results = data.results || [];
+      list.innerHTML = results.length
+        ? results.map(r => `
+            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
+              <span>${r.student_name} (${r.admission_no})</span>
+              <span>${r.score} / ${r.total_points}</span>
+            </div>
+          `).join("")
+        : `<div class="empty-state">No submissions yet.</div>`;
+    } catch (err) {
+      list.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+    }
+  }
+
+
+  // =====================================================================
+  // CBT — student side
+  // =====================================================================
+  let cbtTimerInterval = null;
+  let cbtCurrentTestId = null;
+
+  async function loadStudentCbtList() {
+    clearMsg("studentCbtMsg");
+    const list = el("studentCbtList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/available", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("studentCbtMsg", data.error || "Could not load tests.", "error");
+        return;
+      }
+
+      const tests = data.tests || [];
+      if (!tests.length) {
+        list.innerHTML = `<div class="empty-state">No tests available right now.</div>`;
+        return;
+      }
+
+      list.innerHTML = tests.map(t => `
+        <div class="roster-item">
+          <p class="roster-item-name">${t.title}</p>
+          <p class="roster-item-meta">${t.subjectName} · ${t.questionCount} question(s) · ${t.durationMinutes} min</p>
+          ${t.submitted
+            ? `<p style="margin-top:6px; font-weight:bold; color:#1e5631;">Submitted — Score: ${t.score} / ${t.totalPoints}</p>`
+            : `<button type="button" class="student-cbt-start-btn" data-test-id="${t.id}" data-title="${t.title}" style="margin-top:8px;">Start Test</button>`
+          }
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".student-cbt-start-btn").forEach(btn => {
+        btn.addEventListener("click", () => startCbtTest(btn.dataset.testId, btn.dataset.title));
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("studentCbtMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshStudentCbt").addEventListener("click", loadStudentCbtList);
+
+  let cbtQuestionsCache = [];
+
+  async function startCbtTest(testId, title) {
+    clearMsg("studentCbtMsg");
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + testId + "/take", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.alreadySubmitted) {
+          showMsg("studentCbtMsg", "You already submitted this test. Score: " + data.score + " / " + data.totalPoints, "error");
+          loadStudentCbtList();
+          return;
+        }
+        showMsg("studentCbtMsg", data.error || "Could not load test.", "error");
+        return;
+      }
+
+      cbtCurrentTestId = testId;
+      cbtQuestionsCache = data.questions;
+
+      el("dashboard").classList.remove("active");
+      el("cbtTakeView").style.display = "block";
+      el("cbtScoreResult").style.display = "none";
+      el("cbtTakeQuestions").style.display = "block";
+      el("cbtSubmitBtn").style.display = "block";
+      el("cbtTakeTitle").textContent = title;
+      clearMsg("cbtTakeMsg");
+
+      el("cbtTakeQuestions").innerHTML = data.questions.map((q, i) => {
+        let optionsHtml;
+        if (q.type === "mcq") {
+          const opts = [["A", q.option_a], ["B", q.option_b], ["C", q.option_c], ["D", q.option_d]].filter(o => o[1]);
+          optionsHtml = opts.map(([letter, text]) => `
+            <label style="display:flex; align-items:center; gap:8px; padding:6px 0; font-weight:normal;">
+              <input type="radio" name="cbtq_${q.id}" value="${letter}" style="width:auto;"> ${letter}. ${text}
+            </label>
+          `).join("");
+        } else {
+          optionsHtml = `
+            <label style="display:flex; align-items:center; gap:8px; padding:6px 0; font-weight:normal;">
+              <input type="radio" name="cbtq_${q.id}" value="true" style="width:auto;"> True
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:6px 0; font-weight:normal;">
+              <input type="radio" name="cbtq_${q.id}" value="false" style="width:auto;"> False
+            </label>
+          `;
+        }
+        return `
+          <div class="roster-item" style="margin-bottom:12px;">
+            <p class="roster-item-name">${i + 1}. ${q.question_text}</p>
+            <div style="margin-top:6px;">${optionsHtml}</div>
+          </div>
+        `;
+      }).join("");
+
+      startCbtTimer(data.test.durationMinutes);
+    } catch (err) {
+      showMsg("studentCbtMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  function startCbtTimer(durationMinutes) {
+    let secondsLeft = durationMinutes * 60;
+    const timerEl = el("cbtTimer");
+
+    function render() {
+      const m = Math.floor(secondsLeft / 60);
+      const s = secondsLeft % 60;
+      timerEl.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+    render();
+
+    if (cbtTimerInterval) clearInterval(cbtTimerInterval);
+    cbtTimerInterval = setInterval(() => {
+      secondsLeft--;
+      render();
+      if (secondsLeft <= 0) {
+        clearInterval(cbtTimerInterval);
+        showMsg("cbtTakeMsg", "Time's up — submitting automatically…", "success");
+        submitCbtTest();
+      }
+    }, 1000);
+  }
+
+  async function submitCbtTest() {
+    if (!cbtCurrentTestId) return;
+    if (cbtTimerInterval) clearInterval(cbtTimerInterval);
+
+    const answers = {};
+    cbtQuestionsCache.forEach(q => {
+      const checked = document.querySelector(`input[name="cbtq_${q.id}"]:checked`);
+      if (checked) answers[q.id] = checked.value;
+    });
+
+    const btn = el("cbtSubmitBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtCurrentTestId + "/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ answers })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("cbtTakeMsg", data.error || "Could not submit test.", "error");
+        btn.disabled = false;
+        return;
+      }
+
+      el("cbtTakeQuestions").style.display = "none";
+      el("cbtSubmitBtn").style.display = "none";
+      el("cbtScoreResult").style.display = "block";
+      el("cbtScoreHeading").textContent = "Test Submitted";
+      el("cbtScoreDetail").textContent = "Your score: " + data.score + " out of " + data.totalPoints;
+    } catch (err) {
+      showMsg("cbtTakeMsg", "Could not reach the portal server. Your answers were not submitted — try again.", "error");
+      btn.disabled = false;
+    }
+  }
+
+  el("cbtSubmitBtn").addEventListener("click", () => {
+    if (confirm("Submit your answers now? You can't change them after submitting.")) {
+      submitCbtTest();
+    }
+  });
+
+  el("cbtBackToDashboardBtn").addEventListener("click", () => {
+    el("cbtTakeView").style.display = "none";
+    el("dashboard").classList.add("active");
+    cbtCurrentTestId = null;
+    loadStudentCbtList();
   });
 
 
