@@ -904,6 +904,9 @@
     padding-bottom: 24px;
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -1922,7 +1925,18 @@
 
           <div class="pin-gen-box">
             <h4>Bulk Paste Questions</h4>
-            <p class="sub">Paste several questions at once using this format (blank line between each question):</p>
+
+            <label for="cbtScanFileInput">Scan a Photo of Questions (optional)</label>
+            <input type="file" id="cbtScanFileInput" accept="image/*">
+            <p class="sub">Reads text from a photo of a printed question sheet straight into the box below. Always check the result carefully before previewing — text recognition can misread words, especially option letters and punctuation.</p>
+            <div id="cbtScanMsg" class="msg"></div>
+
+            <label for="cbtUploadFileInput">Upload a Downloaded Question File (optional)</label>
+            <input type="file" id="cbtUploadFileInput" accept=".txt,.docx,.pdf">
+            <p class="sub">Supports .txt, .docx (Word), and text-based .pdf files. The file's text is added to the box below — it still needs to follow the Q:/A:/B:/C:/D:/Answer: layout to be recognized. Scanned/image PDFs won't extract text — use "Scan a Photo" instead for those.</p>
+            <div id="cbtUploadMsg" class="msg"></div>
+
+            <p class="sub">Or type/paste directly, using this format (blank line between each question):</p>
             <pre style="background:#f5efe0; padding:10px; border-radius:6px; font-size:0.8em; white-space:pre-wrap; overflow-x:auto;">Q: What is 2 + 2?
 A) 3
 B) 4
@@ -1934,14 +1948,14 @@ Points: 1
 Q: The earth is flat.
 Type: TF
 Answer: False</pre>
-            <label for="cbtBulkPasteText">Paste your questions here</label>
+            <label for="cbtBulkPasteText">Questions</label>
             <textarea id="cbtBulkPasteText" rows="8" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
 
             <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:10px;">
               <input type="checkbox" id="cbtBulkSaveToBank" style="width:auto;" checked> Also save these to Question Bank for reuse
             </label>
 
-            <button type="button" id="cbtBulkPreviewBtn" class="submit">Preview</button>
+            <button type="button" id="cbtBulkPreviewBtn" class="submit">Preview Questions</button>
             <div id="cbtBulkPasteMsg" class="msg"></div>
 
             <div id="cbtBulkPreviewArea" style="display:none; margin-top:14px;">
@@ -2017,6 +2031,45 @@ Answer: False</pre>
 
             <button type="button" id="cbtBankAddBtn" class="submit">Add to Bank</button>
             <div id="cbtBankAddMsg" class="msg"></div>
+          </div>
+
+          <div class="pin-gen-box">
+            <h4>Bulk Add Questions</h4>
+            <p class="sub">Select a class, subject, and term above first.</p>
+
+            <label for="cbtBankScanFileInput">Scan a Photo of Questions (optional)</label>
+            <input type="file" id="cbtBankScanFileInput" accept="image/*">
+            <p class="sub">Reads text from a photo of a printed question sheet straight into the box below. Always check the result carefully before previewing — text recognition can misread words, especially option letters and punctuation.</p>
+            <div id="cbtBankScanMsg" class="msg"></div>
+
+            <label for="cbtBankUploadFileInput">Upload a Downloaded Question File (optional)</label>
+            <input type="file" id="cbtBankUploadFileInput" accept=".txt,.docx,.pdf">
+            <p class="sub">Supports .txt, .docx (Word), and text-based .pdf files. The file's text is added to the box below — it still needs to follow the Q:/A:/B:/C:/D:/Answer: layout to be recognized. Scanned/image PDFs won't extract text — use "Scan a Photo" instead for those.</p>
+            <div id="cbtBankUploadMsg" class="msg"></div>
+
+            <p class="sub">Or type/paste directly, using this format (blank line between each question):</p>
+            <pre style="background:#f5efe0; padding:10px; border-radius:6px; font-size:0.8em; white-space:pre-wrap; overflow-x:auto;">Q: What is 2 + 2?
+A) 3
+B) 4
+C) 5
+D) 6
+Answer: B
+Points: 1
+
+Q: The earth is flat.
+Type: TF
+Answer: False</pre>
+            <label for="cbtBankBulkPasteText">Questions</label>
+            <textarea id="cbtBankBulkPasteText" rows="8" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
+
+            <button type="button" id="cbtBankBulkPreviewBtn" class="submit">Preview Questions</button>
+            <div id="cbtBankBulkPasteMsg" class="msg"></div>
+
+            <div id="cbtBankBulkPreviewArea" style="display:none; margin-top:14px;">
+              <div id="cbtBankBulkPreviewList"></div>
+              <button type="button" id="cbtBankBulkImportBtn" class="submit" style="margin-top:10px;">Import All</button>
+              <div id="cbtBankBulkImportMsg" class="msg"></div>
+            </div>
           </div>
         </div>
 
@@ -5773,6 +5826,201 @@ Answer: False</pre>
       showMsg("cbtBankAddMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
+    }
+  });
+
+  // =====================================================================
+  // CBT: Scan a Photo (Tesseract.js OCR) + Upload a Question File
+  // Shared by both the test-level and bank-level bulk-add boxes.
+  // Runs entirely in the browser — no server calls, no external API.
+  // =====================================================================
+  async function runOcrIntoTextarea(file, textareaId, msgId) {
+    const msgEl = el(msgId);
+    const textarea = el(textareaId);
+    msgEl.textContent = "Reading text from photo… this can take a while on this connection.";
+    msgEl.className = "msg";
+
+    try {
+      const result = await Tesseract.recognize(file, "eng", {
+        logger: (m) => {
+          if (m.status === "recognizing text" && typeof m.progress === "number") {
+            msgEl.textContent = "Reading photo… " + Math.round(m.progress * 100) + "%";
+          }
+        }
+      });
+      const extracted = result.data.text.trim();
+      if (!extracted) {
+        msgEl.textContent = "Could not read any text from that photo. Try a clearer, well-lit photo.";
+        msgEl.className = "msg error";
+        return;
+      }
+      textarea.value = (textarea.value ? textarea.value + "\n\n" : "") + extracted;
+      msgEl.textContent = "Text added below — please check it carefully before previewing (OCR can misread letters, especially option markers).";
+      msgEl.className = "msg success";
+    } catch (err) {
+      msgEl.textContent = "Could not read that photo. Try again with a clearer image.";
+      msgEl.className = "msg error";
+    }
+  }
+
+  async function extractTextFromFile(file, textareaId, msgId) {
+    const msgEl = el(msgId);
+    const textarea = el(textareaId);
+    const name = file.name.toLowerCase();
+    msgEl.textContent = "Reading file…";
+    msgEl.className = "msg";
+
+    try {
+      let extracted = "";
+
+      if (name.endsWith(".txt")) {
+        extracted = await file.text();
+      } else if (name.endsWith(".docx")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        extracted = result.value;
+      } else if (name.endsWith(".pdf")) {
+        const arrayBuffer = await file.arrayBuffer();
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pageTexts = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pageTexts.push(content.items.map(it => it.str).join(" "));
+        }
+        extracted = pageTexts.join("\n\n");
+      } else {
+        msgEl.textContent = "Unsupported file type. Use .txt, .docx, or a text-based .pdf.";
+        msgEl.className = "msg error";
+        return;
+      }
+
+      extracted = extracted.trim();
+      if (!extracted) {
+        msgEl.textContent = "No readable text found in that file. If it's a scanned/image PDF, use \"Scan a Photo\" instead.";
+        msgEl.className = "msg error";
+        return;
+      }
+
+      textarea.value = (textarea.value ? textarea.value + "\n\n" : "") + extracted;
+      msgEl.textContent = "Text added below — please check it follows the Q:/A:/B:/C:/D:/Answer: layout before previewing.";
+      msgEl.className = "msg success";
+    } catch (err) {
+      msgEl.textContent = "Could not read that file.";
+      msgEl.className = "msg error";
+    }
+  }
+
+  el("cbtScanFileInput").addEventListener("change", (e) => {
+    if (e.target.files[0]) runOcrIntoTextarea(e.target.files[0], "cbtBulkPasteText", "cbtScanMsg");
+  });
+  el("cbtUploadFileInput").addEventListener("change", (e) => {
+    if (e.target.files[0]) extractTextFromFile(e.target.files[0], "cbtBulkPasteText", "cbtUploadMsg");
+  });
+  el("cbtBankScanFileInput").addEventListener("change", (e) => {
+    if (e.target.files[0]) runOcrIntoTextarea(e.target.files[0], "cbtBankBulkPasteText", "cbtBankScanMsg");
+  });
+  el("cbtBankUploadFileInput").addEventListener("change", (e) => {
+    if (e.target.files[0]) extractTextFromFile(e.target.files[0], "cbtBankBulkPasteText", "cbtBankUploadMsg");
+  });
+
+  // ---------- CBT: bulk add straight to the Question Bank ----------
+  let cbtBankBulkParsedQuestions = [];
+
+  el("cbtBankBulkPreviewBtn").addEventListener("click", () => {
+    clearMsg("cbtBankBulkPasteMsg");
+    el("cbtBankBulkPreviewArea").style.display = "none";
+
+    if (!el("cbtBankClassSelect").value || !el("cbtBankSubjectSelect").value || !el("cbtBankTerm").value) {
+      showMsg("cbtBankBulkPasteMsg", "Select a class, subject, and term above first.", "error");
+      return;
+    }
+
+    const text = el("cbtBankBulkPasteText").value;
+    if (!text.trim()) {
+      showMsg("cbtBankBulkPasteMsg", "Paste or scan some questions first.", "error");
+      return;
+    }
+
+    const { parsed, errors } = parseBulkCbtQuestions(text);
+    cbtBankBulkParsedQuestions = parsed;
+
+    if (!parsed.length) {
+      showMsg("cbtBankBulkPasteMsg", "Nothing could be parsed. " + errors.join(" "), "error");
+      return;
+    }
+
+    const previewList = el("cbtBankBulkPreviewList");
+    previewList.innerHTML = parsed.map((q, i) => `
+      <div class="roster-item">
+        <p class="roster-item-name">${i + 1}. ${q.questionText}</p>
+        <p class="roster-item-meta">
+          ${q.type === "mcq"
+            ? `A: ${q.optionA} · B: ${q.optionB}${q.optionC ? " · C: " + q.optionC : ""}${q.optionD ? " · D: " + q.optionD : ""}`
+            : "True / False"}
+          &nbsp;·&nbsp; Correct: <strong>${q.correctOption}</strong> &nbsp;·&nbsp; ${q.points} point(s)
+        </p>
+      </div>
+    `).join("");
+
+    el("cbtBankBulkPreviewArea").style.display = "block";
+    showMsg(
+      "cbtBankBulkPasteMsg",
+      parsed.length + " question(s) parsed successfully." + (errors.length ? " " + errors.length + " block(s) had problems: " + errors.join(" ") : ""),
+      errors.length ? "error" : "success"
+    );
+  });
+
+  el("cbtBankBulkImportBtn").addEventListener("click", async () => {
+    clearMsg("cbtBankBulkImportMsg");
+    const classId = el("cbtBankClassSelect").value;
+    const subjectId = el("cbtBankSubjectSelect").value;
+    const term = el("cbtBankTerm").value;
+
+    if (!cbtBankBulkParsedQuestions.length) {
+      showMsg("cbtBankBulkImportMsg", "Nothing to import — preview first.", "error");
+      return;
+    }
+
+    const btn = el("cbtBankBulkImportBtn");
+    btn.disabled = true;
+
+    let successCount = 0;
+    const failures = [];
+
+    for (let i = 0; i < cbtBankBulkParsedQuestions.length; i++) {
+      const q = { ...cbtBankBulkParsedQuestions[i], classId, subjectId, term };
+      showMsg("cbtBankBulkImportMsg", `Importing ${i + 1} of ${cbtBankBulkParsedQuestions.length}…`, "success");
+      try {
+        const res = await fetchWithTimeout(API_BASE + "/api/cbt/question-bank", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(q)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          failures.push("Question " + (i + 1) + ": " + (data.error || "failed"));
+          continue;
+        }
+        successCount++;
+      } catch (err) {
+        failures.push("Question " + (i + 1) + ": connection error");
+      }
+    }
+
+    btn.disabled = false;
+    showMsg(
+      "cbtBankBulkImportMsg",
+      `Imported ${successCount} of ${cbtBankBulkParsedQuestions.length} question(s).` + (failures.length ? " Issues: " + failures.join("; ") : ""),
+      failures.length ? "error" : "success"
+    );
+
+    if (successCount > 0) {
+      el("cbtBankBulkPasteText").value = "";
+      el("cbtBankBulkPreviewArea").style.display = "none";
+      cbtBankBulkParsedQuestions = [];
+      loadCbtBankList();
     }
   });
 
