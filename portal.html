@@ -1809,6 +1809,7 @@
         <div class="roster-subnav">
           <button class="cbt-subtab active" data-cbttab="tests">Tests</button>
           <button class="cbt-subtab" data-cbttab="questions">Manage Questions</button>
+          <button class="cbt-subtab" data-cbttab="bank">Question Bank</button>
           <button class="cbt-subtab" data-cbttab="results">Results</button>
         </div>
 
@@ -1861,6 +1862,16 @@
           <div id="cbtQuestionsList"></div>
 
           <div class="pin-gen-box">
+            <h4>Add from Question Bank</h4>
+            <p class="sub">Questions already saved for this test's class, subject, and term.</p>
+            <a class="refresh-link" id="cbtRefreshFromBankLink">Refresh</a>
+            <div id="cbtFromBankMsg" class="msg"></div>
+            <div id="cbtFromBankList" style="margin-top:10px;"></div>
+            <button type="button" id="cbtAddFromBankBtn" class="submit" style="margin-top:10px;">Add Selected to Test</button>
+            <div id="cbtAddFromBankResultMsg" class="msg"></div>
+          </div>
+
+          <div class="pin-gen-box">
             <h4>Add a Question</h4>
             <label for="cbtQType">Type</label>
             <select id="cbtQType">
@@ -1901,6 +1912,10 @@
             <label for="cbtQPoints">Points</label>
             <input type="number" id="cbtQPoints" min="1" value="1">
 
+            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:10px;">
+              <input type="checkbox" id="cbtSaveToBank" style="width:auto;" checked> Also save to Question Bank for reuse
+            </label>
+
             <button type="button" id="cbtAddQuestionBtn" class="submit">Add Question</button>
             <div id="cbtAddQuestionMsg" class="msg"></div>
           </div>
@@ -1922,6 +1937,10 @@ Answer: False</pre>
             <label for="cbtBulkPasteText">Paste your questions here</label>
             <textarea id="cbtBulkPasteText" rows="8" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
 
+            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:10px;">
+              <input type="checkbox" id="cbtBulkSaveToBank" style="width:auto;" checked> Also save these to Question Bank for reuse
+            </label>
+
             <button type="button" id="cbtBulkPreviewBtn" class="submit">Preview</button>
             <div id="cbtBulkPasteMsg" class="msg"></div>
 
@@ -1930,6 +1949,74 @@ Answer: False</pre>
               <button type="button" id="cbtBulkImportBtn" class="submit" style="margin-top:10px;">Import All</button>
               <div id="cbtBulkImportMsg" class="msg"></div>
             </div>
+          </div>
+        </div>
+
+        <!-- ---------- QUESTION BANK (standalone management) ---------- -->
+        <div id="cbt-bank" class="cbt-subpanel">
+          <p class="sub">Build a reusable library of questions per class + subject + term.</p>
+
+          <label for="cbtBankClassSelect">Class</label>
+          <select id="cbtBankClassSelect"><option value="">Select a class…</option></select>
+
+          <label for="cbtBankSubjectSelect">Subject</label>
+          <select id="cbtBankSubjectSelect"><option value="">Select a class first…</option></select>
+
+          <label for="cbtBankTerm">Term</label>
+          <select id="cbtBankTerm">
+            <option value="">Select…</option>
+            <option value="First Term">First Term</option>
+            <option value="Second Term">Second Term</option>
+            <option value="Third Term">Third Term</option>
+          </select>
+
+          <button type="button" id="cbtBankLoadBtn" class="submit">Load Bank</button>
+          <div id="cbtBankMsg" class="msg"></div>
+          <div id="cbtBankList" style="margin-top:14px;"></div>
+
+          <div class="pin-gen-box">
+            <h4>Add to Question Bank</h4>
+            <label for="cbtBankQType">Type</label>
+            <select id="cbtBankQType">
+              <option value="mcq">Multiple Choice</option>
+              <option value="true_false">True / False</option>
+            </select>
+
+            <label for="cbtBankQText">Question</label>
+            <input type="text" id="cbtBankQText" placeholder="Type the question…">
+
+            <div id="cbtBankMcqOptions">
+              <label for="cbtBankOptA">Option A</label>
+              <input type="text" id="cbtBankOptA">
+              <label for="cbtBankOptB">Option B</label>
+              <input type="text" id="cbtBankOptB">
+              <label for="cbtBankOptC">Option C (optional)</label>
+              <input type="text" id="cbtBankOptC">
+              <label for="cbtBankOptD">Option D (optional)</label>
+              <input type="text" id="cbtBankOptD">
+
+              <label for="cbtBankCorrectMcq">Correct Option</label>
+              <select id="cbtBankCorrectMcq">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+
+            <div id="cbtBankTfOptions" style="display:none;">
+              <label for="cbtBankCorrectTf">Correct Answer</label>
+              <select id="cbtBankCorrectTf">
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </div>
+
+            <label for="cbtBankQPoints">Points</label>
+            <input type="number" id="cbtBankQPoints" min="1" value="1">
+
+            <button type="button" id="cbtBankAddBtn" class="submit">Add to Bank</button>
+            <div id="cbtBankAddMsg" class="msg"></div>
           </div>
         </div>
 
@@ -2872,6 +2959,7 @@ Answer: False</pre>
     }
     if (toolName === "cbt") {
       populateCbtClassSelect();
+      populateCbtBankClassSelect();
     }
   }
 
@@ -4905,6 +4993,9 @@ Answer: False</pre>
   // CBT (Computer-Based Testing) — staff side
   // =====================================================================
   let cbtActiveTestId = null;
+  let cbtActiveTestClassId = null;
+  let cbtActiveTestSubjectId = null;
+  let cbtActiveTestTerm = null;
   let cbtActiveTestLabel = "";
 
   async function populateCbtClassSelect() {
@@ -4997,7 +5088,7 @@ Answer: False</pre>
             <strong style="color:${t.status === 'published' ? '#1e5631' : '#a06a00'};">${t.status}</strong>
           </p>
           <div class="row2" style="margin-top:8px;">
-            <button type="button" class="cbt-manage-btn" data-test-id="${t.id}" data-title="${t.title}">Manage Questions</button>
+            <button type="button" class="cbt-manage-btn" data-test-id="${t.id}" data-title="${t.title}" data-class-id="${classId}" data-subject-id="${t.subject_id}" data-term="${term}">Manage Questions</button>
             <button type="button" class="cbt-results-btn" data-test-id="${t.id}" data-title="${t.title}">View Results</button>
           </div>
           <div class="row2" style="margin-top:8px;">
@@ -5029,9 +5120,13 @@ Answer: False</pre>
       btn.addEventListener("click", () => {
         cbtActiveTestId = btn.dataset.testId;
         cbtActiveTestLabel = btn.dataset.title;
+        cbtActiveTestClassId = btn.dataset.classId;
+        cbtActiveTestSubjectId = btn.dataset.subjectId;
+        cbtActiveTestTerm = btn.dataset.term;
         el("cbtActiveTestLabel").textContent = "Managing: " + cbtActiveTestLabel;
         switchCbtTab("questions");
         loadCbtQuestions();
+        loadCbtFromBankList();
       });
     });
 
@@ -5208,7 +5303,7 @@ Answer: False</pre>
     const type = el("cbtQType").value;
     const questionText = el("cbtQText").value.trim();
     const points = el("cbtQPoints").value || 1;
-    const body = { questionText, type, points };
+    const body = { questionText, type, points, saveToBank: el("cbtSaveToBank").checked };
 
     if (type === "mcq") {
       body.optionA = el("cbtOptA").value.trim();
@@ -5401,7 +5496,7 @@ Answer: False</pre>
     const failures = [];
 
     for (let i = 0; i < cbtBulkParsedQuestions.length; i++) {
-      const q = cbtBulkParsedQuestions[i];
+      const q = { ...cbtBulkParsedQuestions[i], saveToBank: el("cbtBulkSaveToBank").checked };
       showMsg("cbtBulkImportMsg", `Importing ${i + 1} of ${cbtBulkParsedQuestions.length}…`, "success");
       try {
         const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions", {
@@ -5432,6 +5527,252 @@ Answer: False</pre>
       el("cbtBulkPreviewArea").style.display = "none";
       cbtBulkParsedQuestions = [];
       loadCbtQuestions();
+    }
+  });
+
+  // ---------- CBT: add from question bank (within Manage Questions) ----------
+  async function loadCbtFromBankList() {
+    clearMsg("cbtFromBankMsg");
+    const box = el("cbtFromBankList");
+
+    if (!cbtActiveTestClassId || !cbtActiveTestSubjectId || !cbtActiveTestTerm) {
+      box.innerHTML = "";
+      showMsg("cbtFromBankMsg", "Pick a test from the Tests tab first.", "error");
+      return;
+    }
+
+    box.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/cbt/question-bank?classId=" + cbtActiveTestClassId + "&subjectId=" + cbtActiveTestSubjectId + "&term=" + encodeURIComponent(cbtActiveTestTerm),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        box.innerHTML = "";
+        showMsg("cbtFromBankMsg", data.error || "Could not load the question bank.", "error");
+        return;
+      }
+
+      const questions = data.questions || [];
+      box.innerHTML = questions.length
+        ? questions.map(q => `
+            <label style="display:flex; align-items:flex-start; gap:8px; font-weight:normal; padding:6px 0; border-bottom:1px solid #f0e6c8;">
+              <input type="checkbox" class="cbt-bank-pick-checkbox" value="${q.id}" style="width:auto; margin-top:3px;">
+              <span>${q.question_text}<br><span style="color:#888; font-size:0.85em;">${q.type === "mcq" ? "Multiple Choice" : "True/False"} · Correct: ${q.correct_option}</span></span>
+            </label>
+          `).join("")
+        : `<div class="empty-state">Nothing in the bank yet for this class/subject/term. Add some in the Question Bank tab.</div>`;
+    } catch (err) {
+      box.innerHTML = "";
+      showMsg("cbtFromBankMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("cbtRefreshFromBankLink").addEventListener("click", loadCbtFromBankList);
+
+  el("cbtAddFromBankBtn").addEventListener("click", async () => {
+    clearMsg("cbtAddFromBankResultMsg");
+    if (!cbtActiveTestId) {
+      showMsg("cbtAddFromBankResultMsg", "Pick a test from the Tests tab first.", "error");
+      return;
+    }
+    const selected = Array.from(document.querySelectorAll(".cbt-bank-pick-checkbox:checked")).map(cb => cb.value);
+    if (!selected.length) {
+      showMsg("cbtAddFromBankResultMsg", "Select at least one question.", "error");
+      return;
+    }
+
+    const btn = el("cbtAddFromBankBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions/from-bank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ questionBankIds: selected })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("cbtAddFromBankResultMsg", data.error || "Could not add questions.", "error");
+        return;
+      }
+
+      showMsg("cbtAddFromBankResultMsg", data.message || "Added.", "success");
+      loadCbtQuestions();
+    } catch (err) {
+      showMsg("cbtAddFromBankResultMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- CBT: standalone Question Bank tab ----------
+  async function populateCbtBankClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("cbtBankClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("cbtBankClassSelect").addEventListener("change", async (e) => {
+    const classId = e.target.value;
+    const subjectSelect = el("cbtBankSubjectSelect");
+    if (!classId) {
+      subjectSelect.innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+    subjectSelect.innerHTML = `<option value="">Loading…</option>`;
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/classes/" + classId + "/subjects", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+      const subjects = data.subjects || [];
+      subjectSelect.innerHTML = subjects.length
+        ? `<option value="">Select a subject…</option>` + subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join("")
+        : `<option value="">No subjects assigned to this class</option>`;
+    } catch (err) {
+      subjectSelect.innerHTML = `<option value="">Could not load subjects</option>`;
+    }
+  });
+
+  el("cbtBankQType").addEventListener("change", (e) => {
+    const isMcq = e.target.value === "mcq";
+    el("cbtBankMcqOptions").style.display = isMcq ? "block" : "none";
+    el("cbtBankTfOptions").style.display = isMcq ? "none" : "block";
+  });
+
+  async function loadCbtBankList() {
+    clearMsg("cbtBankMsg");
+    const classId = el("cbtBankClassSelect").value;
+    const subjectId = el("cbtBankSubjectSelect").value;
+    const term = el("cbtBankTerm").value;
+    const list = el("cbtBankList");
+
+    if (!classId || !subjectId || !term) {
+      showMsg("cbtBankMsg", "Please select a class, subject, and term.", "error");
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/cbt/question-bank?classId=" + classId + "&subjectId=" + subjectId + "&term=" + encodeURIComponent(term),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("cbtBankMsg", data.error || "Could not load the question bank.", "error");
+        return;
+      }
+
+      const questions = data.questions || [];
+      list.innerHTML = questions.length
+        ? questions.map(q => `
+            <div class="roster-item">
+              <p class="roster-item-name">${q.question_text}</p>
+              <p class="roster-item-meta">
+                ${q.type === "mcq"
+                  ? `A: ${q.option_a || "—"} · B: ${q.option_b || "—"} · C: ${q.option_c || "—"} · D: ${q.option_d || "—"}`
+                  : "True / False"}
+                &nbsp;·&nbsp; Correct: <strong>${q.correct_option}</strong> &nbsp;·&nbsp; ${q.points} point(s)
+              </p>
+              <a class="delete-link cbt-bank-delete-link" data-id="${q.id}">Remove from bank</a>
+            </div>
+          `).join("")
+        : `<div class="empty-state">Nothing in the bank yet. Add one below.</div>`;
+
+      list.querySelectorAll(".cbt-bank-delete-link").forEach(link => {
+        link.addEventListener("click", async () => {
+          if (!confirm("Remove this question from the bank?")) return;
+          try {
+            const res = await fetchWithTimeout(API_BASE + "/api/cbt/question-bank/" + link.dataset.id, { method: "DELETE", headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data.error || "Could not remove question.");
+              return;
+            }
+            loadCbtBankList();
+          } catch (err) {
+            alert("Could not reach the portal server. Check your connection.");
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("cbtBankMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("cbtBankLoadBtn").addEventListener("click", loadCbtBankList);
+
+  el("cbtBankAddBtn").addEventListener("click", async () => {
+    clearMsg("cbtBankAddMsg");
+    const classId = el("cbtBankClassSelect").value;
+    const subjectId = el("cbtBankSubjectSelect").value;
+    const term = el("cbtBankTerm").value;
+
+    if (!classId || !subjectId || !term) {
+      showMsg("cbtBankAddMsg", "Please select a class, subject, and term above first.", "error");
+      return;
+    }
+
+    const type = el("cbtBankQType").value;
+    const questionText = el("cbtBankQText").value.trim();
+    const points = el("cbtBankQPoints").value || 1;
+    const body = { classId, subjectId, term, questionText, type, points };
+
+    if (type === "mcq") {
+      body.optionA = el("cbtBankOptA").value.trim();
+      body.optionB = el("cbtBankOptB").value.trim();
+      body.optionC = el("cbtBankOptC").value.trim() || null;
+      body.optionD = el("cbtBankOptD").value.trim() || null;
+      body.correctOption = el("cbtBankCorrectMcq").value;
+    } else {
+      body.correctOption = el("cbtBankCorrectTf").value;
+    }
+
+    if (!questionText) {
+      showMsg("cbtBankAddMsg", "Please enter the question text.", "error");
+      return;
+    }
+
+    const btn = el("cbtBankAddBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/cbt/question-bank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("cbtBankAddMsg", data.error || "Could not add to the bank.", "error");
+        return;
+      }
+
+      showMsg("cbtBankAddMsg", data.message || "Added to bank.", "success");
+      el("cbtBankQText").value = "";
+      el("cbtBankOptA").value = "";
+      el("cbtBankOptB").value = "";
+      el("cbtBankOptC").value = "";
+      el("cbtBankOptD").value = "";
+      loadCbtBankList();
+    } catch (err) {
+      showMsg("cbtBankAddMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
     }
   });
 
