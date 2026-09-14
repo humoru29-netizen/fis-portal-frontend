@@ -1904,6 +1904,33 @@
             <button type="button" id="cbtAddQuestionBtn" class="submit">Add Question</button>
             <div id="cbtAddQuestionMsg" class="msg"></div>
           </div>
+
+          <div class="pin-gen-box">
+            <h4>Bulk Paste Questions</h4>
+            <p class="sub">Paste several questions at once using this format (blank line between each question):</p>
+            <pre style="background:#f5efe0; padding:10px; border-radius:6px; font-size:0.8em; white-space:pre-wrap; overflow-x:auto;">Q: What is 2 + 2?
+A) 3
+B) 4
+C) 5
+D) 6
+Answer: B
+Points: 1
+
+Q: The earth is flat.
+Type: TF
+Answer: False</pre>
+            <label for="cbtBulkPasteText">Paste your questions here</label>
+            <textarea id="cbtBulkPasteText" rows="8" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
+
+            <button type="button" id="cbtBulkPreviewBtn" class="submit">Preview</button>
+            <div id="cbtBulkPasteMsg" class="msg"></div>
+
+            <div id="cbtBulkPreviewArea" style="display:none; margin-top:14px;">
+              <div id="cbtBulkPreviewList"></div>
+              <button type="button" id="cbtBulkImportBtn" class="submit" style="margin-top:10px;">Import All</button>
+              <div id="cbtBulkImportMsg" class="msg"></div>
+            </div>
+          </div>
         </div>
 
         <!-- ---------- RESULTS ---------- -->
@@ -5225,6 +5252,186 @@
       showMsg("cbtAddQuestionMsg", "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
+    }
+  });
+
+  // ---------- CBT: bulk paste import ----------
+  /**
+   * Parses blocks separated by blank lines. Each block:
+   *   Q: <question text>            (required, first line)
+   *   A) <option>  B) <option>  ... (for MCQ — at least A and B)
+   *   Type: TF                      (alternative to A)/B) lines — marks it True/False)
+   *   Answer: <letter or True/False> (required)
+   *   Points: <number>              (optional, default 1)
+   * Lines are matched case-insensitively on their prefix; option markers
+   * accept "A)", "A.", or "A:".
+   */
+  function parseBulkCbtQuestions(text) {
+    const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    const parsed = [];
+    const errors = [];
+
+    blocks.forEach((block, blockIndex) => {
+      const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
+      const label = "Block " + (blockIndex + 1);
+
+      const qLine = lines.find(l => /^q[:.]?\s*/i.test(l));
+      if (!qLine) {
+        errors.push(label + ": missing a line starting with 'Q:'.");
+        return;
+      }
+      const questionText = qLine.replace(/^q[:.]?\s*/i, "").trim();
+      if (!questionText) {
+        errors.push(label + ": question text is empty.");
+        return;
+      }
+
+      const typeLine = lines.find(l => /^type[:.]?\s*/i.test(l));
+      const isTrueFalse = typeLine && /tf|true\/false|true_false/i.test(typeLine);
+
+      const answerLine = lines.find(l => /^answer[:.]?\s*/i.test(l));
+      if (!answerLine) {
+        errors.push(label + ": missing an 'Answer:' line.");
+        return;
+      }
+      const answerRaw = answerLine.replace(/^answer[:.]?\s*/i, "").trim();
+
+      const pointsLine = lines.find(l => /^points?[:.]?\s*/i.test(l));
+      const points = pointsLine ? (parseInt(pointsLine.replace(/^points?[:.]?\s*/i, "").trim(), 10) || 1) : 1;
+
+      if (isTrueFalse || /^true$|^false$/i.test(answerRaw)) {
+        const normalized = answerRaw.toLowerCase();
+        if (normalized !== "true" && normalized !== "false") {
+          errors.push(label + ": for True/False questions, Answer must be 'True' or 'False'.");
+          return;
+        }
+        parsed.push({ questionText, type: "true_false", correctOption: normalized, points });
+        return;
+      }
+
+      // Otherwise treat as MCQ
+      const optionMap = {};
+      lines.forEach(l => {
+        const m = l.match(/^([A-D])[).:]\s*(.+)$/i);
+        if (m) optionMap[m[1].toUpperCase()] = m[2].trim();
+      });
+
+      if (!optionMap.A || !optionMap.B) {
+        errors.push(label + ": MCQ questions need at least an 'A)' and 'B)' option line.");
+        return;
+      }
+
+      const correctOption = answerRaw.toUpperCase();
+      if (!["A", "B", "C", "D"].includes(correctOption)) {
+        errors.push(label + ": Answer must be A, B, C, or D for multiple choice questions.");
+        return;
+      }
+      if (!optionMap[correctOption]) {
+        errors.push(label + ": Answer references option " + correctOption + " but that option wasn't provided.");
+        return;
+      }
+
+      parsed.push({
+        questionText, type: "mcq",
+        optionA: optionMap.A, optionB: optionMap.B,
+        optionC: optionMap.C || null, optionD: optionMap.D || null,
+        correctOption, points
+      });
+    });
+
+    return { parsed, errors };
+  }
+
+  let cbtBulkParsedQuestions = [];
+
+  el("cbtBulkPreviewBtn").addEventListener("click", () => {
+    clearMsg("cbtBulkPasteMsg");
+    el("cbtBulkPreviewArea").style.display = "none";
+
+    const text = el("cbtBulkPasteText").value;
+    if (!text.trim()) {
+      showMsg("cbtBulkPasteMsg", "Paste some questions first.", "error");
+      return;
+    }
+
+    const { parsed, errors } = parseBulkCbtQuestions(text);
+    cbtBulkParsedQuestions = parsed;
+
+    if (!parsed.length) {
+      showMsg("cbtBulkPasteMsg", "Nothing could be parsed. " + errors.join(" "), "error");
+      return;
+    }
+
+    const previewList = el("cbtBulkPreviewList");
+    previewList.innerHTML = parsed.map((q, i) => `
+      <div class="roster-item">
+        <p class="roster-item-name">${i + 1}. ${q.questionText}</p>
+        <p class="roster-item-meta">
+          ${q.type === "mcq"
+            ? `A: ${q.optionA} · B: ${q.optionB}${q.optionC ? " · C: " + q.optionC : ""}${q.optionD ? " · D: " + q.optionD : ""}`
+            : "True / False"}
+          &nbsp;·&nbsp; Correct: <strong>${q.correctOption}</strong> &nbsp;·&nbsp; ${q.points} point(s)
+        </p>
+      </div>
+    `).join("");
+
+    el("cbtBulkPreviewArea").style.display = "block";
+    showMsg(
+      "cbtBulkPasteMsg",
+      parsed.length + " question(s) parsed successfully." + (errors.length ? " " + errors.length + " block(s) had problems: " + errors.join(" ") : ""),
+      errors.length ? "error" : "success"
+    );
+  });
+
+  el("cbtBulkImportBtn").addEventListener("click", async () => {
+    clearMsg("cbtBulkImportMsg");
+    if (!cbtActiveTestId) {
+      showMsg("cbtBulkImportMsg", "Pick a test from the Tests tab first.", "error");
+      return;
+    }
+    if (!cbtBulkParsedQuestions.length) {
+      showMsg("cbtBulkImportMsg", "Nothing to import — preview first.", "error");
+      return;
+    }
+
+    const btn = el("cbtBulkImportBtn");
+    btn.disabled = true;
+
+    let successCount = 0;
+    const failures = [];
+
+    for (let i = 0; i < cbtBulkParsedQuestions.length; i++) {
+      const q = cbtBulkParsedQuestions[i];
+      showMsg("cbtBulkImportMsg", `Importing ${i + 1} of ${cbtBulkParsedQuestions.length}…`, "success");
+      try {
+        const res = await fetchWithTimeout(API_BASE + "/api/cbt/tests/" + cbtActiveTestId + "/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(q)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          failures.push("Question " + (i + 1) + ": " + (data.error || "failed"));
+          continue;
+        }
+        successCount++;
+      } catch (err) {
+        failures.push("Question " + (i + 1) + ": connection error");
+      }
+    }
+
+    btn.disabled = false;
+    showMsg(
+      "cbtBulkImportMsg",
+      `Imported ${successCount} of ${cbtBulkParsedQuestions.length} question(s).` + (failures.length ? " Issues: " + failures.join("; ") : ""),
+      failures.length ? "error" : "success"
+    );
+
+    if (successCount > 0) {
+      el("cbtBulkPasteText").value = "";
+      el("cbtBulkPreviewArea").style.display = "none";
+      cbtBulkParsedQuestions = [];
+      loadCbtQuestions();
     }
   });
 
