@@ -1706,6 +1706,17 @@
             </div>
           </div>
 
+          <div class="row2">
+            <div>
+              <label for="rcTermEnds">This Term Ends (optional)</label>
+              <input type="text" id="rcTermEnds" placeholder="e.g. 7 Aug 2026">
+            </div>
+            <div>
+              <label for="rcNextTermBegins">Next Term Begins (optional)</label>
+              <input type="text" id="rcNextTermBegins" placeholder="e.g. 21 Sept 2026">
+            </div>
+          </div>
+
           <button type="button" id="rcLoadBtn" class="submit">Generate Report Card</button>
           <div id="rcMsg" class="msg"></div>
 
@@ -1730,6 +1741,17 @@
             <div>
               <label for="rcBulkSession">Session</label>
               <input type="text" id="rcBulkSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <div class="row2">
+            <div>
+              <label for="rcBulkTermEnds">This Term Ends (optional)</label>
+              <input type="text" id="rcBulkTermEnds" placeholder="e.g. 7 Aug 2026">
+            </div>
+            <div>
+              <label for="rcBulkNextTermBegins">Next Term Begins (optional)</label>
+              <input type="text" id="rcBulkNextTermBegins" placeholder="e.g. 21 Sept 2026">
             </div>
           </div>
 
@@ -4357,6 +4379,8 @@
           failures.push(name + " (" + (data.error || "error") + ")");
           continue;
         }
+        data.termEnds = el("rcBulkTermEnds").value.trim();
+        data.nextTermBegins = el("rcBulkNextTermBegins").value.trim();
         cards.push(data);
       } catch (err) {
         failures.push(name + " (connection error)");
@@ -4394,89 +4418,126 @@
     );
   });
 
+  function ordinal(n) {
+    if (n === null || n === undefined) return "—";
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function gradeRemark(grade) {
+    const map = {
+      A1: "Excellent", B2: "Very Good", B3: "Good",
+      C4: "Credit", C5: "Credit", C6: "Credit",
+      D7: "Pass", E8: "Pass", F9: "Fail"
+    };
+    return map[grade] || "—";
+  }
+
   function reportCardBlockHtml(rc) {
-    const attendanceTotal = rc.attendance.present + rc.attendance.absent + rc.attendance.late + rc.attendance.excused;
     const teacherRemarkText = rc.teacherRemark || "(No class teacher remark recorded yet.)";
     const principalRemarkText = rc.principalRemark || rc.suggestedPrincipalRemark || "";
+    const totalObtainable = rc.subjects.length * 100;
+    const positionText = rc.position ? ordinal(rc.position) + " out of " + rc.outOf : "—";
 
     return `
       <div class="report-page">
-        <div class="letterhead">
-          <img src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="School Crest">
-          <div class="text">
+        <div class="frame">
+          <div class="letterhead">
+            <img src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="School Crest">
             <h1>Faith International School, Itobe</h1>
             <p>Behind Deeper Life Bible Church, Itobe, Ofu Local Government Area, Kogi State</p>
-            <p class="subtitle">STUDENT REPORT CARD</p>
+            <p class="motto">"In God We Trust"</p>
           </div>
-        </div>
 
-        <div class="meta">
-          <div>
-            <strong>${rc.student.name}</strong><br>
-            Admission No: ${rc.student.admissionNo}<br>
-            Class: ${rc.student.className}
-          </div>
-          <div style="text-align:right;">
-            Term: ${rc.term}<br>
-            Session: ${rc.session}<br>
-            Position: ${rc.position ? rc.position + " of " + rc.outOf : "—"}
-          </div>
-        </div>
+          <div class="title-bar">STUDENT ACADEMIC REPORT</div>
 
-        <table>
-          <thead>
-            <tr><th>Subject</th><th>CA1</th><th>CA2</th><th>Exam</th><th>Total</th><th>Grade</th></tr>
-          </thead>
-          <tbody>
-            ${rc.subjects.map(s => `
+          <table class="info-grid">
+            <tr>
+              <td><span class="info-label">Student Name</span><br><strong>${rc.student.name}</strong></td>
+              <td><span class="info-label">Class</span><br><strong>${rc.student.className}</strong></td>
+            </tr>
+            <tr>
+              <td><span class="info-label">Term</span><br><strong>${rc.term}</strong></td>
+              <td><span class="info-label">Session</span><br><strong>${rc.session}</strong></td>
+            </tr>
+            ${(rc.termEnds || rc.nextTermBegins) ? `
+            <tr>
+              <td><span class="info-label">This Term Ends</span><br><strong>${rc.termEnds || "—"}</strong></td>
+              <td><span class="info-label">Next Term Begins</span><br><strong>${rc.nextTermBegins || "—"}</strong></td>
+            </tr>
+            ` : ""}
+          </table>
+
+          <table class="subjects-table">
+            <thead>
               <tr>
-                <td>${s.subjectName}</td>
-                <td>${s.ca1 ?? "—"}</td>
-                <td>${s.ca2 ?? "—"}</td>
-                <td>${s.exam ?? "—"}</td>
-                <td>${s.total}</td>
-                <td>${s.grade || "—"}</td>
+                <th>S/N</th><th>Subject</th><th>CA1<br><span class="sub">/20</span></th>
+                <th>CA2<br><span class="sub">/20</span></th><th>Exam<br><span class="sub">/60</span></th>
+                <th>Total<br><span class="sub">/100</span></th><th>Grade</th><th>Remark</th>
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${rc.subjects.map((s, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td class="left">${s.subjectName}</td>
+                  <td>${s.ca1 ?? "—"}</td>
+                  <td>${s.ca2 ?? "—"}</td>
+                  <td>${s.exam ?? "—"}</td>
+                  <td><strong>${s.total}</strong></td>
+                  <td><strong>${s.grade || "—"}</strong></td>
+                  <td class="left">${gradeRemark(s.grade)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
 
-        <p class="grading-key">
-          Grading (WAEC scale): A1 75–100 &nbsp; B2 70–74 &nbsp; B3 65–69 &nbsp; C4 60–64 &nbsp;
-          C5 55–59 &nbsp; C6 50–54 &nbsp; D7 45–49 &nbsp; E8 40–44 &nbsp; F9 0–39
-        </p>
+          ${rc.pendingSubjectCount > 0 ? `<p class="pending-note">Note: ${rc.pendingSubjectCount} subject score(s) are still pending approval and are not shown above.</p>` : ""}
 
-        ${rc.pendingSubjectCount > 0 ? `<p class="pending-note">Note: ${rc.pendingSubjectCount} subject score(s) are still pending approval and are not shown above.</p>` : ""}
+          <table class="summary-table">
+            <tr>
+              <td class="left"><strong>Total Obtainable</strong></td><td>${totalObtainable}</td>
+              <td class="left"><strong>Total Scored</strong></td><td>${rc.overallTotal}</td>
+            </tr>
+            <tr>
+              <td class="left"><strong>Overall Average</strong></td><td class="highlight">${rc.average !== null ? rc.average.toFixed(1) + "%" : "—"}</td>
+              <td class="left"><strong>Class Position</strong></td><td class="highlight">${positionText}</td>
+            </tr>
+          </table>
 
-        <div class="summary-grid">
-          <div class="summary-box"><div class="label">Overall Total</div><div class="value">${rc.overallTotal}</div></div>
-          <div class="summary-box"><div class="label">Average</div><div class="value">${rc.average !== null ? rc.average.toFixed(1) : "—"}</div></div>
-          <div class="summary-box"><div class="label">Attendance</div><div class="value">${rc.attendance.present}/${attendanceTotal || "—"}</div></div>
-          <div class="summary-box"><div class="label">Fee Balance</div><div class="value">${Number(rc.fee.balance).toLocaleString()}</div></div>
-        </div>
-
-        <p style="margin-top: 20px; font-size: 0.85em; color: #777;">
-          Attendance — Present: ${rc.attendance.present}, Absent: ${rc.attendance.absent},
-          Late: ${rc.attendance.late}, Excused: ${rc.attendance.excused} (out of ${attendanceTotal} day(s) marked)
-        </p>
-
-        <div class="remarks-block">
-          <div class="remark-row">
-            <div class="remark-label">Class Teacher's Remark</div>
-            <div class="remark-text">${teacherRemarkText}</div>
+          <div class="key-and-stamp">
+            <p class="grading-key">
+              <strong>Grading Key:</strong> A1 = 75–100 (Excellent) &nbsp;·&nbsp; B2 = 70–74 (Very Good) &nbsp;·&nbsp;
+              B3 = 65–69 (Good) &nbsp;·&nbsp; C4–C6 = 50–64 (Credit) &nbsp;·&nbsp; D7–E8 = 40–49 (Pass) &nbsp;·&nbsp; F9 = 0–39 (Fail)
+            </p>
+            <div class="stamp-overlay">${PRINCIPAL_STAMP_SVG}</div>
           </div>
-          <div class="remark-row">
-            <div class="remark-label">Principal's Remark</div>
-            <div class="remark-text">${principalRemarkText}</div>
-          </div>
-        </div>
 
-        <div class="signoff">
-          <div class="sign-line">Class Teacher's Signature</div>
-          <div style="text-align:center;">
-            ${PRINCIPAL_STAMP_SVG}
+          <div class="remarks-block">
+            <div class="remark-row">
+              <div class="remark-label">Class Teacher's Remark</div>
+              <div class="remark-text">${teacherRemarkText}</div>
+            </div>
+            <div class="remark-row">
+              <div class="remark-label">Principal's Remark</div>
+              <div class="remark-text">${principalRemarkText}</div>
+            </div>
           </div>
-          <div class="sign-line">Principal's Signature &amp; Stamp</div>
+
+          <table class="signoff-table">
+            <tr>
+              <td>Class Teacher's Signature &amp; Date</td>
+              <td>Principal's Signature &amp; Date</td>
+            </tr>
+          </table>
+
+          <p class="attendance-fee-line">
+            Attendance: ${rc.attendance.present} present, ${rc.attendance.absent} absent, ${rc.attendance.late} late, ${rc.attendance.excused} excused &nbsp;|&nbsp;
+            Fee Balance: ${Number(rc.fee.balance).toLocaleString()}
+          </p>
+
+          <p class="footer">Faith International School, Itobe</p>
         </div>
       </div>
     `;
@@ -4484,31 +4545,39 @@
 
   const REPORT_CARD_STYLES = `
     body { font-family: Georgia, serif; color: #222; }
-    .report-page { max-width: 750px; margin: 30px auto; line-height: 1.5; page-break-after: always; }
+    .report-page { max-width: 780px; margin: 20px auto; page-break-after: always; }
     .report-page:last-child { page-break-after: auto; }
-    .letterhead { display: flex; align-items: center; gap: 16px; justify-content: center; border-bottom: 3px double #7a1f2b; padding-bottom: 14px; margin-bottom: 20px; }
-    .letterhead img { width: 78px; height: auto; }
-    .letterhead .text { text-align: center; }
-    .letterhead h1 { margin: 0; font-size: 1.35em; color: #7a1f2b; }
-    .letterhead p { margin: 3px 0 0; color: #555; font-size: 0.9em; }
-    .letterhead .subtitle { margin-top: 6px; font-weight: bold; letter-spacing: 1px; }
-    .meta { display:flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.95em; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 0.9em; }
-    th { background: #f5efe0; }
-    td:first-child, th:first-child { text-align: left; }
-    .summary-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
-    .summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; flex: 1; min-width: 140px; }
-    .summary-box .label { font-size: 0.75em; color: #777; text-transform: uppercase; }
-    .summary-box .value { font-size: 1.2em; font-weight: bold; }
-    .pending-note { margin-top: 14px; color: #a06a00; font-size: 0.85em; }
-    .grading-key { margin-top: 16px; font-size: 0.78em; color: #555; }
-    .remarks-block { margin-top: 26px; }
-    .remarks-block .remark-row { margin-top: 14px; }
-    .remarks-block .remark-label { font-weight: bold; font-size: 0.9em; }
-    .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 20px; font-size: 0.92em; }
-    .signoff { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
-    .signoff .sign-line { border-top: 1px solid #333; width: 220px; padding-top: 6px; font-size: 0.85em; text-align: center; }
+    .frame { border: 3px double #7a1f2b; padding: 24px 30px; }
+    .letterhead { text-align: center; }
+    .letterhead img { width: 90px; height: auto; }
+    .letterhead h1 { margin: 8px 0 0; font-size: 1.5em; color: #7a1f2b; letter-spacing: 0.5px; }
+    .letterhead p { margin: 3px 0 0; color: #555; font-size: 0.85em; }
+    .letterhead .motto { font-style: italic; color: #7a1f2b; margin-top: 4px; }
+    .title-bar { text-align: center; font-weight: bold; letter-spacing: 2px; border-top: 2px solid #7a1f2b; border-bottom: 2px solid #7a1f2b; padding: 8px 0; margin: 16px 0; font-size: 1.05em; }
+    table { width: 100%; border-collapse: collapse; }
+    .info-grid { margin-bottom: 14px; }
+    .info-grid td { border: 1px solid #999; padding: 8px 12px; width: 50%; font-size: 0.9em; }
+    .info-label { font-size: 0.72em; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .subjects-table th, .subjects-table td { border: 1px solid #999; padding: 6px 8px; text-align: center; font-size: 0.88em; }
+    .subjects-table th { background: #f5efe0; }
+    .subjects-table .sub { font-size: 0.75em; color: #888; }
+    .subjects-table .left, .info-grid .left { text-align: left; }
+    td.left { text-align: left; }
+    .pending-note { margin-top: 10px; color: #a06a00; font-size: 0.82em; }
+    .summary-table { margin-top: 14px; }
+    .summary-table td { border: 1px solid #999; padding: 8px 12px; font-size: 0.92em; }
+    .summary-table .highlight { font-weight: bold; color: #7a1f2b; }
+    .key-and-stamp { position: relative; margin-top: 16px; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; min-height: 90px; }
+    .grading-key { font-size: 0.76em; color: #555; line-height: 1.6; max-width: 78%; }
+    .stamp-overlay { position: absolute; right: 8px; bottom: -10px; }
+    .remarks-block { margin-top: 20px; }
+    .remarks-block .remark-row { margin-top: 12px; }
+    .remarks-block .remark-label { font-weight: bold; font-size: 0.88em; }
+    .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 18px; font-size: 0.9em; }
+    .signoff-table { margin-top: 30px; }
+    .signoff-table td { text-align: center; padding-top: 30px; border-top: 1px solid #333; font-size: 0.85em; }
+    .attendance-fee-line { margin-top: 16px; font-size: 0.78em; color: #777; text-align: center; }
+    .footer { text-align: center; font-size: 0.8em; color: #888; margin-top: 8px; }
     @media print { body { margin: 0; } }
   `;
 
@@ -4560,6 +4629,8 @@
         return;
       }
 
+      data.termEnds = el("rcTermEnds").value.trim();
+      data.nextTermBegins = el("rcNextTermBegins").value.trim();
       currentReportCard = data;
 
       const showPrincipalField = isAdminRole(currentAdminRole);
