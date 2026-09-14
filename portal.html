@@ -1223,7 +1223,7 @@
       </button>
       <button class="tool-tile" data-tool="results">
         <span class="tool-icon">📄</span>
-        <span class="tool-label">Results Approval</span>
+        <span class="tool-label" id="resultsToolLabel">Results Approval</span>
       </button>
       <button class="tool-tile" data-tool="fees">
         <span class="tool-icon">🧾</span>
@@ -2075,8 +2075,32 @@ Answer: False</pre>
 
         <!-- ---------- RESULTS ---------- -->
         <div id="cbt-results" class="cbt-subpanel">
-          <p class="sub">Pick a test from the Tests tab first (tap "View Results" on a test).</p>
-          <div id="cbtResultsLabel" style="font-weight:bold; margin-bottom:10px;"></div>
+          <p class="sub">Pick a class, term, and session to see the tests for that class, then view a test's scores.</p>
+
+          <label for="cbtResClassSelect">Class</label>
+          <select id="cbtResClassSelect"><option value="">Select a class…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="cbtResTerm">Term</label>
+              <select id="cbtResTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="cbtResSession">Session</label>
+              <input type="text" id="cbtResSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="cbtResLoadTestsBtn" class="submit">Load Tests</button>
+          <div id="cbtResTestsMsg" class="msg"></div>
+          <div id="cbtResTestsList" style="margin-top:14px;"></div>
+
+          <div id="cbtResultsLabel" style="font-weight:bold; margin:16px 0 10px;"></div>
           <div id="cbtResultsList"></div>
         </div>
       </div>
@@ -2688,7 +2712,7 @@ Answer: False</pre>
     cashier: "Cashier"
   };
 
-  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "report-card", "cbt"];
+  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "cbt"];
   const CASHIER_ALLOWED_TOOLS = ["fees"];
 
   function applyToolVisibility(allowedTools) {
@@ -2701,6 +2725,7 @@ Answer: False</pre>
     const approveTab = document.querySelector('.results-subtab[data-resultstab="approve"]');
     const enterTab = document.querySelector('.results-subtab[data-resultstab="enter"]');
     const subnav = approveTab ? approveTab.closest(".roster-subnav") : null;
+    const tileLabel = el("resultsToolLabel");
 
     if (isTeacherRole) {
       if (approveTab) approveTab.style.display = "none";
@@ -2708,9 +2733,29 @@ Answer: False</pre>
       el("results-approve").classList.remove("active");
       if (enterTab) enterTab.classList.add("active");
       el("results-enter").classList.add("active");
+      if (tileLabel) tileLabel.textContent = "Enter Scores";
     } else {
       if (approveTab) approveTab.style.display = "";
       if (subnav) subnav.style.display = "flex";
+      if (tileLabel) tileLabel.textContent = "Results Approval";
+    }
+  }
+
+  function applyCbtTabVisibility(isTeacherRole) {
+    const testsTab = document.querySelector('.cbt-subtab[data-cbttab="tests"]');
+    const questionsTab = document.querySelector('.cbt-subtab[data-cbttab="questions"]');
+    const bankTab = document.querySelector('.cbt-subtab[data-cbttab="bank"]');
+
+    if (isTeacherRole) {
+      if (testsTab) testsTab.style.display = "none";
+      if (questionsTab) questionsTab.style.display = "none";
+      document.querySelectorAll(".cbt-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".cbt-subpanel").forEach(p => p.classList.remove("active"));
+      if (bankTab) bankTab.classList.add("active");
+      el("cbt-bank").classList.add("active");
+    } else {
+      if (testsTab) testsTab.style.display = "";
+      if (questionsTab) questionsTab.style.display = "";
     }
   }
 
@@ -2785,6 +2830,7 @@ Answer: False</pre>
     applyLevelToggleUI();
     applyToolVisibility(null);
     applyResultsTabVisibility(false);
+    applyCbtTabVisibility(false);
 
     updateSyncBar();
 
@@ -2808,6 +2854,7 @@ Answer: False</pre>
 
     applyToolVisibility(TEACHER_ALLOWED_TOOLS);
     applyResultsTabVisibility(true);
+    applyCbtTabVisibility(true);
 
     updateSyncBar();
 
@@ -2831,6 +2878,7 @@ Answer: False</pre>
 
     applyToolVisibility(CASHIER_ALLOWED_TOOLS);
     applyResultsTabVisibility(true);
+    applyCbtTabVisibility(true);
 
     updateSyncBar();
 
@@ -3013,6 +3061,7 @@ Answer: False</pre>
     if (toolName === "cbt") {
       populateCbtClassSelect();
       populateCbtBankClassSelect();
+      populateCbtResClassSelect();
     }
   }
 
@@ -6021,6 +6070,73 @@ Answer: False</pre>
       el("cbtBankBulkPreviewArea").style.display = "none";
       cbtBankBulkParsedQuestions = [];
       loadCbtBankList();
+    }
+  });
+
+  // ---------- CBT: results (standalone test picker) ----------
+  async function populateCbtResClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("cbtResClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("cbtResLoadTestsBtn").addEventListener("click", async () => {
+    clearMsg("cbtResTestsMsg");
+    const classId = el("cbtResClassSelect").value;
+    const term = el("cbtResTerm").value;
+    const session = el("cbtResSession").value.trim();
+    const list = el("cbtResTestsList");
+
+    if (!classId || !term || !session) {
+      showMsg("cbtResTestsMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+    el("cbtResultsLabel").textContent = "";
+    el("cbtResultsList").innerHTML = "";
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/cbt/tests?classId=" + classId + "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("cbtResTestsMsg", data.error || "Could not load tests.", "error");
+        return;
+      }
+
+      const tests = data.tests || [];
+      if (!tests.length) {
+        list.innerHTML = `<div class="empty-state">No tests found for this class/term/session.</div>`;
+        return;
+      }
+
+      list.innerHTML = tests.map(t => `
+        <div class="roster-item">
+          <p class="roster-item-name">${t.title} — ${t.subject_name}</p>
+          <p class="roster-item-meta">${t.status} · ${t.submission_count} submission(s)</p>
+          <button type="button" class="cbt-res-view-btn" data-test-id="${t.id}" data-title="${t.title}">View Results</button>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".cbt-res-view-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          el("cbtResultsLabel").textContent = "Results: " + btn.dataset.title;
+          loadCbtResults(btn.dataset.testId);
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("cbtResTestsMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
