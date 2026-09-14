@@ -4435,8 +4435,6 @@
   }
 
   function reportCardBlockHtml(rc) {
-    const teacherRemarkText = rc.teacherRemark || "(No class teacher remark recorded yet.)";
-    const principalRemarkText = rc.principalRemark || rc.suggestedPrincipalRemark || "";
     const totalObtainable = rc.subjects.length * 100;
     const positionText = rc.position ? ordinal(rc.position) + " out of " + rc.outOf : "—";
 
@@ -4517,11 +4515,11 @@
           <div class="remarks-block">
             <div class="remark-row">
               <div class="remark-label">Class Teacher's Remark</div>
-              <div class="remark-text">${teacherRemarkText}</div>
+              <div class="remark-text blank-line"></div>
             </div>
             <div class="remark-row">
               <div class="remark-label">Principal's Remark</div>
-              <div class="remark-text">${principalRemarkText}</div>
+              <div class="remark-text blank-line"></div>
             </div>
           </div>
 
@@ -4573,7 +4571,7 @@
     .remarks-block { margin-top: 20px; }
     .remarks-block .remark-row { margin-top: 12px; }
     .remarks-block .remark-label { font-weight: bold; font-size: 0.88em; }
-    .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 18px; font-size: 0.9em; }
+    .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border-bottom: 1px solid #999; min-height: 26px; font-size: 0.9em; }
     .signoff-table { margin-top: 30px; }
     .signoff-table td { text-align: center; padding-top: 30px; border-top: 1px solid #333; font-size: 0.85em; }
     .attendance-fee-line { margin-top: 16px; font-size: 0.78em; color: #777; text-align: center; }
