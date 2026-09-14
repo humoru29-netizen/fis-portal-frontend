@@ -567,7 +567,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -579,20 +579,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel, .rc-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active, .rc-subpanel.active {
     display: block;
   }
 
@@ -1675,34 +1675,77 @@
 
       <div id="section-report-card" class="admin-section">
         <h3>Report Card</h3>
-        <p class="sub">Generate a student's report card for a term (only approved results are included).</p>
+        <p class="sub">Generate report cards for a term (only approved results are included).</p>
 
-        <label for="rcClassSelect">Class</label>
-        <select id="rcClassSelect"><option value="">Select a class…</option></select>
-
-        <label for="rcStudentSelect">Student</label>
-        <select id="rcStudentSelect"><option value="">Select a class first…</option></select>
-
-        <div class="row2">
-          <div>
-            <label for="rcTerm">Term</label>
-            <select id="rcTerm">
-              <option value="">Select…</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
-          </div>
-          <div>
-            <label for="rcSession">Session</label>
-            <input type="text" id="rcSession" placeholder="2026/2027">
-          </div>
+        <div class="roster-subnav">
+          <button class="rc-subtab active" data-rctab="single">Single Student</button>
+          <button class="rc-subtab" data-rctab="bulk">Whole Class</button>
         </div>
 
-        <button type="button" id="rcLoadBtn" class="submit">Generate Report Card</button>
-        <div id="rcMsg" class="msg"></div>
+        <!-- ---------- SINGLE STUDENT ---------- -->
+        <div id="rc-single" class="rc-subpanel active">
+          <label for="rcClassSelect">Class</label>
+          <select id="rcClassSelect"><option value="">Select a class…</option></select>
 
-        <div id="rcResult" style="margin-top:16px;"></div>
+          <label for="rcStudentSelect">Student</label>
+          <select id="rcStudentSelect"><option value="">Select a class first…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="rcTerm">Term</label>
+              <select id="rcTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="rcSession">Session</label>
+              <input type="text" id="rcSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="rcLoadBtn" class="submit">Generate Report Card</button>
+          <div id="rcMsg" class="msg"></div>
+
+          <div id="rcResult" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- ---------- WHOLE CLASS ---------- -->
+        <div id="rc-bulk" class="rc-subpanel">
+          <label for="rcBulkClassSelect">Class</label>
+          <select id="rcBulkClassSelect"><option value="">Select a class…</option></select>
+
+          <div class="row2">
+            <div>
+              <label for="rcBulkTerm">Term</label>
+              <select id="rcBulkTerm">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="rcBulkSession">Session</label>
+              <input type="text" id="rcBulkSession" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="rcBulkLoadBtn" class="submit">Load Class List</button>
+          <div id="rcBulkMsg" class="msg"></div>
+
+          <div id="rcBulkListArea" style="display:none; margin-top:16px;">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
+              <input type="checkbox" id="rcBulkSelectAll" style="width:auto;"> Select all
+            </label>
+            <div id="rcBulkStudentList" style="margin-top:10px;"></div>
+
+            <button type="button" id="rcBulkPrintBtn" class="submit" style="margin-top:14px;">Print Selected Report Cards</button>
+            <div id="rcBulkPrintMsg" class="msg"></div>
+          </div>
+        </div>
       </div>
 
       <div id="section-roster" class="admin-section">
@@ -4216,52 +4259,148 @@
     } catch (err) {
       return;
     }
-    el("rcClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+    const options = `<option value="">Select a class…</option>` +
       classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+    el("rcClassSelect").innerHTML = options;
+    el("rcBulkClassSelect").innerHTML = options;
   }
 
   el("rcClassSelect").addEventListener("change", (e) => loadStudentsIntoSelect(e.target.value, "rcStudentSelect"));
 
-  function printReportCard(rc) {
-    const attendanceTotal = rc.attendance.present + rc.attendance.absent + rc.attendance.late + rc.attendance.excused;
-    const teacherRemarkText = rc.teacherRemark || "(No class teacher remark recorded yet.)";
-    const principalRemarkText = rc.principalRemark || rc.suggestedPrincipalRemark || "";
+  // ---------- Report Card: sub-tab switching (Single / Whole Class) ----------
+  document.querySelectorAll(".rc-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".rc-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".rc-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("rc-" + btn.dataset.rctab).classList.add("active");
+    });
+  });
+
+  // ---------- Report Card: whole class ----------
+  el("rcBulkLoadBtn").addEventListener("click", async () => {
+    clearMsg("rcBulkMsg");
+    const classId = el("rcBulkClassSelect").value;
+    const term = el("rcBulkTerm").value;
+    const session = el("rcBulkSession").value.trim();
+    const listArea = el("rcBulkListArea");
+    const listBox = el("rcBulkStudentList");
+
+    if (!classId || !term || !session) {
+      showMsg("rcBulkMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    const btn = el("rcBulkLoadBtn");
+    btn.disabled = true;
+    listArea.style.display = "none";
+
+    try {
+      const data = await cachedGetJson("/api/students?classId=" + classId);
+      const students = data.students || [];
+
+      if (!students.length) {
+        showMsg("rcBulkMsg", "No students in this class.", "error");
+        return;
+      }
+
+      listBox.innerHTML = students.map(s => `
+        <label style="display:flex; align-items:center; gap:8px; font-weight:normal; padding:6px 0; border-bottom:1px solid #f0e6c8;">
+          <input type="checkbox" class="rc-bulk-checkbox" value="${s.id}" data-name="${s.name}" style="width:auto;" checked>
+          ${s.name} (${s.admission_no})
+        </label>
+      `).join("");
+
+      el("rcBulkSelectAll").checked = true;
+      listArea.style.display = "block";
+    } catch (err) {
+      showMsg("rcBulkMsg", "Could not load students. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  el("rcBulkSelectAll").addEventListener("change", (e) => {
+    document.querySelectorAll(".rc-bulk-checkbox").forEach(cb => { cb.checked = e.target.checked; });
+  });
+
+  el("rcBulkPrintBtn").addEventListener("click", async () => {
+    clearMsg("rcBulkPrintMsg");
+    const term = el("rcBulkTerm").value;
+    const session = el("rcBulkSession").value.trim();
+    const selected = Array.from(document.querySelectorAll(".rc-bulk-checkbox:checked"));
+
+    if (!selected.length) {
+      showMsg("rcBulkPrintMsg", "Select at least one student.", "error");
+      return;
+    }
+
+    const btn = el("rcBulkPrintBtn");
+    btn.disabled = true;
+
+    const cards = [];
+    const failures = [];
+
+    for (let i = 0; i < selected.length; i++) {
+      const studentId = selected[i].value;
+      const name = selected[i].dataset.name;
+      showMsg("rcBulkPrintMsg", `Fetching ${i + 1} of ${selected.length}: ${name}…`, "success");
+
+      try {
+        const res = await fetchWithTimeout(
+          API_BASE + "/api/report-card/" + studentId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+          { method: "GET", headers: authHeaders() },
+          15000
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          failures.push(name + " (" + (data.error || "error") + ")");
+          continue;
+        }
+        cards.push(data);
+      } catch (err) {
+        failures.push(name + " (connection error)");
+      }
+    }
+
+    btn.disabled = false;
+
+    if (!cards.length) {
+      showMsg("rcBulkPrintMsg", "Could not generate any report cards. " + failures.join("; "), "error");
+      return;
+    }
 
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Report Card — ${rc.student.name}</title>
-        <style>
-          body { font-family: Georgia, serif; color: #222; max-width: 750px; margin: 30px auto; line-height: 1.5; }
-          .letterhead { display: flex; align-items: center; gap: 16px; justify-content: center; border-bottom: 3px double #7a1f2b; padding-bottom: 14px; margin-bottom: 20px; }
-          .letterhead img { width: 78px; height: auto; }
-          .letterhead .text { text-align: center; }
-          .letterhead h1 { margin: 0; font-size: 1.35em; color: #7a1f2b; }
-          .letterhead p { margin: 3px 0 0; color: #555; font-size: 0.9em; }
-          .letterhead .subtitle { margin-top: 6px; font-weight: bold; letter-spacing: 1px; }
-          .meta { display:flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.95em; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 0.9em; }
-          th { background: #f5efe0; }
-          td:first-child, th:first-child { text-align: left; }
-          .summary-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
-          .summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; flex: 1; min-width: 140px; }
-          .summary-box .label { font-size: 0.75em; color: #777; text-transform: uppercase; }
-          .summary-box .value { font-size: 1.2em; font-weight: bold; }
-          .pending-note { margin-top: 14px; color: #a06a00; font-size: 0.85em; }
-          .grading-key { margin-top: 16px; font-size: 0.78em; color: #555; }
-          .remarks-block { margin-top: 26px; }
-          .remarks-block .remark-row { margin-top: 14px; }
-          .remarks-block .remark-label { font-weight: bold; font-size: 0.9em; }
-          .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 20px; font-size: 0.92em; }
-          .signoff { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
-          .signoff .sign-line { border-top: 1px solid #333; width: 220px; padding-top: 6px; font-size: 0.85em; text-align: center; }
-          @media print { body { margin: 0; } }
-        </style>
+        <title>Report Cards</title>
+        <style>${REPORT_CARD_STYLES}</style>
       </head>
-      <body>
+      <body>${cards.map(rc => reportCardBlockHtml(rc)).join("")}</body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = function () { printWindow.print(); };
+
+    showMsg(
+      "rcBulkPrintMsg",
+      `Opened ${cards.length} report card(s) for printing.` + (failures.length ? ` Skipped: ${failures.join("; ")}` : ""),
+      failures.length ? "error" : "success"
+    );
+  });
+
+  function reportCardBlockHtml(rc) {
+    const attendanceTotal = rc.attendance.present + rc.attendance.absent + rc.attendance.late + rc.attendance.excused;
+    const teacherRemarkText = rc.teacherRemark || "(No class teacher remark recorded yet.)";
+    const principalRemarkText = rc.principalRemark || rc.suggestedPrincipalRemark || "";
+
+    return `
+      <div class="report-page">
         <div class="letterhead">
           <img src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="School Crest">
           <div class="text">
@@ -4339,7 +4478,50 @@
           </div>
           <div class="sign-line">Principal's Signature &amp; Stamp</div>
         </div>
-      </body>
+      </div>
+    `;
+  }
+
+  const REPORT_CARD_STYLES = `
+    body { font-family: Georgia, serif; color: #222; }
+    .report-page { max-width: 750px; margin: 30px auto; line-height: 1.5; page-break-after: always; }
+    .report-page:last-child { page-break-after: auto; }
+    .letterhead { display: flex; align-items: center; gap: 16px; justify-content: center; border-bottom: 3px double #7a1f2b; padding-bottom: 14px; margin-bottom: 20px; }
+    .letterhead img { width: 78px; height: auto; }
+    .letterhead .text { text-align: center; }
+    .letterhead h1 { margin: 0; font-size: 1.35em; color: #7a1f2b; }
+    .letterhead p { margin: 3px 0 0; color: #555; font-size: 0.9em; }
+    .letterhead .subtitle { margin-top: 6px; font-weight: bold; letter-spacing: 1px; }
+    .meta { display:flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; font-size: 0.95em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 0.9em; }
+    th { background: #f5efe0; }
+    td:first-child, th:first-child { text-align: left; }
+    .summary-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+    .summary-box { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; flex: 1; min-width: 140px; }
+    .summary-box .label { font-size: 0.75em; color: #777; text-transform: uppercase; }
+    .summary-box .value { font-size: 1.2em; font-weight: bold; }
+    .pending-note { margin-top: 14px; color: #a06a00; font-size: 0.85em; }
+    .grading-key { margin-top: 16px; font-size: 0.78em; color: #555; }
+    .remarks-block { margin-top: 26px; }
+    .remarks-block .remark-row { margin-top: 14px; }
+    .remarks-block .remark-label { font-weight: bold; font-size: 0.9em; }
+    .remarks-block .remark-text { margin: 4px 0 0; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 20px; font-size: 0.92em; }
+    .signoff { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+    .signoff .sign-line { border-top: 1px solid #333; width: 220px; padding-top: 6px; font-size: 0.85em; text-align: center; }
+    @media print { body { margin: 0; } }
+  `;
+
+  function printReportCard(rc) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Report Card — ${rc.student.name}</title>
+        <style>${REPORT_CARD_STYLES}</style>
+      </head>
+      <body>${reportCardBlockHtml(rc)}</body>
       </html>
     `;
 
