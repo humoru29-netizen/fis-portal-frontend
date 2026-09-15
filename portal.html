@@ -1284,6 +1284,7 @@
           <select id="attClassSelect">
             <option value="">Select a class…</option>
           </select>
+          <a class="refresh-link" id="refreshAttClasses">Refresh classes (use if a save fails)</a>
 
           <div class="row2">
             <div>
@@ -4037,6 +4038,11 @@ Answer: False</pre>
     el("attClassSelect").innerHTML = `<option value="">Select a class…</option>` +
       classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
   }
+
+  el("refreshAttClasses").addEventListener("click", async () => {
+    invalidateCachePrefix("/api/classes");
+    await populateAttClassSelect();
+  });
 
   let attendanceState = {}; // studentId -> status
 
