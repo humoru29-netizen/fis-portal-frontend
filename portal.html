@@ -324,6 +324,27 @@
     font-size: 12.5px;
   }
 
+  .ticker-bar {
+    overflow: hidden;
+    white-space: nowrap;
+    background: #fdf1d6;
+    border-bottom: 1px solid #e8c96b;
+    padding: 8px 0;
+  }
+  .ticker-track {
+    display: inline-block;
+    padding-left: 100%;
+    white-space: nowrap;
+    font-size: 0.88em;
+    font-weight: 600;
+    color: #7a1f2b;
+    animation: ticker-scroll linear infinite;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
   .sync-bar {
     display: flex;
     align-items: center;
@@ -1131,6 +1152,10 @@
 
 <!-- ===== SIMPLE DASHBOARD (teacher / cashier / student) ===== -->
 <div id="dashboard" class="dashboard">
+  <div class="ticker-bar" id="dashTickerBar" style="display:none; margin: -1px -1px 16px;">
+    <div class="ticker-track" id="dashTickerTrack"></div>
+  </div>
+
   <h2 id="dashGreeting">Welcome</h2>
   <p id="dashDetail">You are signed in.</p>
   <button id="logoutBtn">Sign Out</button>
@@ -1185,6 +1210,10 @@
       <span class="admin-user-badge" id="adminUserBadge">admin</span>
       <button class="admin-logout-btn" id="adminLogoutBtn">Log Out</button>
     </div>
+  </div>
+
+  <div class="ticker-bar" id="tickerBar" style="display:none;">
+    <div class="ticker-track" id="tickerTrack"></div>
   </div>
 
   <div class="sync-bar" id="syncBar">
@@ -2737,6 +2766,7 @@ Answer: False</pre>
       el("dashDetail").textContent = "Signed in as " + profile.role.replace(/_/g, " ") + (profile.level ? " (" + profile.level + ")" : "");
       el("studentCbtArea").style.display = "none";
       el("studentAnnArea").style.display = "none";
+      el("dashTickerBar").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
@@ -2744,6 +2774,7 @@ Answer: False</pre>
       el("studentAnnArea").style.display = "block";
       loadStudentCbtList();
       loadStudentAnnouncements();
+      renderTicker("dashTickerBar", "dashTickerTrack");
     }
   }
 
@@ -2876,6 +2907,7 @@ Answer: False</pre>
     applyCbtTabVisibility(false);
 
     updateSyncBar();
+    renderTicker("tickerBar", "tickerTrack");
 
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
@@ -2900,6 +2932,7 @@ Answer: False</pre>
     applyCbtTabVisibility(true);
 
     updateSyncBar();
+    renderTicker("tickerBar", "tickerTrack");
 
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
@@ -2924,6 +2957,7 @@ Answer: False</pre>
     applyCbtTabVisibility(true);
 
     updateSyncBar();
+    renderTicker("tickerBar", "tickerTrack");
 
     // Return to the tool grid on every fresh sign-in.
     el("toolPanel").classList.remove("active");
@@ -6581,6 +6615,39 @@ Answer: False</pre>
   }
 
   el("refreshAnnouncements").addEventListener("click", loadAnnouncements);
+
+  // ---------- Announcements: running ticker ----------
+  async function renderTicker(barId, trackId) {
+    const bar = el(barId);
+    const track = el(trackId);
+    if (!bar || !track) return;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/announcements", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        bar.style.display = "none";
+        return;
+      }
+
+      const items = (data.announcements || []).slice(0, 8);
+      if (!items.length) {
+        bar.style.display = "none";
+        return;
+      }
+
+      const text = items.map(a => "📢 " + a.title + ": " + a.body).join("     •     ");
+      track.textContent = text + "     •     ";
+
+      const duration = Math.max(18, Math.min(90, text.length * 0.12));
+      track.style.animationDuration = duration + "s";
+
+      bar.style.display = "block";
+    } catch (err) {
+      bar.style.display = "none";
+    }
+  }
 
 
   // ---------- Assignments: sub-tab switching (Create / View & Grade) ----------
