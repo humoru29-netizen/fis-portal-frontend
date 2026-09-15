@@ -1173,6 +1173,31 @@
     <div id="studentCbtMsg" class="msg"></div>
     <div id="studentCbtList" style="margin-top:12px;"></div>
   </div>
+
+  <div id="studentReportArea" style="display:none; margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
+    <h3>My Report Card</h3>
+    <p class="sub">Only approved subject scores are included. If a subject isn't showing yet, its score may still be awaiting approval.</p>
+
+    <div class="row2">
+      <div>
+        <label for="stuRcTerm">Term</label>
+        <select id="stuRcTerm">
+          <option value="">Select…</option>
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+      </div>
+      <div>
+        <label for="stuRcSession">Session</label>
+        <input type="text" id="stuRcSession" placeholder="2026/2027">
+      </div>
+    </div>
+
+    <button type="button" id="stuRcLoadBtn" class="submit">View My Report Card</button>
+    <div id="stuRcMsg" class="msg"></div>
+    <div id="stuRcResult" style="margin-top:16px;"></div>
+  </div>
 </div>
 
 <!-- ===== CBT TEST-TAKING VIEW (full screen, shown while a student is attempting a test) ===== -->
@@ -2760,18 +2785,21 @@ Answer: False</pre>
     el("adminShell").classList.remove("active");
     el("cbtTakeView").style.display = "none";
     el("dashboard").classList.add("active");
+    currentStudentId = type === "student" ? profile.id : null;
 
     if (type === "staff") {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Signed in as " + profile.role.replace(/_/g, " ") + (profile.level ? " (" + profile.level + ")" : "");
       el("studentCbtArea").style.display = "none";
       el("studentAnnArea").style.display = "none";
+      el("studentReportArea").style.display = "none";
       el("dashTickerBar").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
       el("studentCbtArea").style.display = "block";
       el("studentAnnArea").style.display = "block";
+      el("studentReportArea").style.display = "block";
       loadStudentCbtList();
       loadStudentAnnouncements();
       renderTicker("dashTickerBar", "dashTickerTrack");
@@ -2834,6 +2862,7 @@ Answer: False</pre>
   }
 
   let currentAdminRole = null;
+  let currentStudentId = null;
   let currentLevelFilter = "both"; // 'primary' | 'secondary' | 'both'
 
   function levelBannerText(role, level) {
@@ -6261,6 +6290,58 @@ Answer: False</pre>
   // =====================================================================
   let cbtTimerInterval = null;
   let cbtCurrentTestId = null;
+
+  el("stuRcLoadBtn").addEventListener("click", async () => {
+    clearMsg("stuRcMsg");
+    const term = el("stuRcTerm").value;
+    const session = el("stuRcSession").value.trim();
+    const result = el("stuRcResult");
+
+    if (!term || !session) {
+      showMsg("stuRcMsg", "Please select a term and enter a session.", "error");
+      return;
+    }
+
+    const btn = el("stuRcLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/report-card/" + currentStudentId + "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("stuRcMsg", data.error || "Could not load your report card.", "error");
+        return;
+      }
+
+      data.termEnds = "";
+      data.nextTermBegins = "";
+
+      result.innerHTML = `
+        <div class="roster-item">
+          <p class="roster-item-name">${data.subjects.length} subject(s) approved so far</p>
+          <p class="roster-item-meta">
+            Average: ${data.average !== null ? data.average.toFixed(1) + "%" : "—"} ·
+            Position: ${data.position ? ordinal(data.position) + " out of " + data.outOf : "—"}
+            ${data.pendingSubjectCount > 0 ? " · " + data.pendingSubjectCount + " subject(s) still pending approval" : ""}
+          </p>
+          <a class="refresh-link" id="stuRcPrintLink" style="margin-top:8px; display:inline-block;">View / Print Report Card</a>
+        </div>
+      `;
+
+      el("stuRcPrintLink").addEventListener("click", () => printReportCard(data));
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("stuRcMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   async function loadStudentAnnouncements() {
     clearMsg("studentAnnMsg");
