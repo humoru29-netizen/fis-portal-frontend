@@ -1135,6 +1135,13 @@
   <p id="dashDetail">You are signed in.</p>
   <button id="logoutBtn">Sign Out</button>
 
+  <div id="studentAnnArea" style="display:none; margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
+    <h3>Announcements</h3>
+    <a class="refresh-link" id="refreshStudentAnn">Refresh</a>
+    <div id="studentAnnMsg" class="msg"></div>
+    <div id="studentAnnList" style="margin-top:12px;"></div>
+  </div>
+
   <div id="studentCbtArea" style="display:none; margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
     <h3>Available Tests</h3>
     <a class="refresh-link" id="refreshStudentCbt">Refresh</a>
@@ -2306,8 +2313,40 @@ Answer: False</pre>
 
       <div id="section-announcements" class="admin-section">
         <h3>Announcements</h3>
-        <p class="sub">Post school-wide or class announcements.</p>
-        <div class="coming-soon">This section is being built next.</div>
+        <p class="sub">Post school-wide or targeted announcements.</p>
+
+        <div id="announcementsPostBox" class="pin-gen-box" style="display:none;">
+          <h4 style="margin-top:0;">Post an Announcement</h4>
+
+          <label for="annTitle">Title</label>
+          <input type="text" id="annTitle" placeholder="e.g. Mid-Term Break Notice">
+
+          <label for="annBody">Message</label>
+          <textarea id="annBody" rows="4" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
+
+          <label for="annAudience">Audience</label>
+          <select id="annAudience">
+            <option value="all">Everyone (staff + students)</option>
+            <option value="staff">All Staff</option>
+            <option value="teachers">Teachers Only</option>
+            <option value="students">All Students</option>
+            <option value="primary">Primary (staff + students)</option>
+            <option value="secondary">Secondary (staff + students)</option>
+            <option value="class">Specific Class (students only)</option>
+          </select>
+
+          <div id="annClassPickerBox" style="display:none;">
+            <label for="annClassSelect">Class</label>
+            <select id="annClassSelect"><option value="">Select a class…</option></select>
+          </div>
+
+          <button type="button" id="annPostBtn" class="submit">Post Announcement</button>
+          <div id="annPostMsg" class="msg"></div>
+        </div>
+
+        <a class="refresh-link" id="refreshAnnouncements">Refresh</a>
+        <div id="annListMsg" class="msg"></div>
+        <div id="annList" style="margin-top:14px;"></div>
       </div>
 
     </div>
@@ -2697,11 +2736,14 @@ Answer: False</pre>
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Signed in as " + profile.role.replace(/_/g, " ") + (profile.level ? " (" + profile.level + ")" : "");
       el("studentCbtArea").style.display = "none";
+      el("studentAnnArea").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
       el("studentCbtArea").style.display = "block";
+      el("studentAnnArea").style.display = "block";
       loadStudentCbtList();
+      loadStudentAnnouncements();
     }
   }
 
@@ -2713,8 +2755,8 @@ Answer: False</pre>
     cashier: "Cashier"
   };
 
-  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "cbt"];
-  const CASHIER_ALLOWED_TOOLS = ["fees"];
+  const TEACHER_ALLOWED_TOOLS = ["attendance", "assignments", "results", "cbt", "announcements"];
+  const CASHIER_ALLOWED_TOOLS = ["fees", "announcements"];
 
   function applyToolVisibility(allowedTools) {
     document.querySelectorAll(".tool-tile").forEach(tile => {
@@ -3063,6 +3105,11 @@ Answer: False</pre>
       populateCbtClassSelect();
       populateCbtBankClassSelect();
       populateCbtResClassSelect();
+    }
+    if (toolName === "announcements") {
+      el("announcementsPostBox").style.display = isAdminRole(currentAdminRole) ? "block" : "none";
+      if (isAdminRole(currentAdminRole)) populateAnnClassSelect();
+      loadAnnouncements();
     }
   }
 
@@ -6181,6 +6228,39 @@ Answer: False</pre>
   let cbtTimerInterval = null;
   let cbtCurrentTestId = null;
 
+  async function loadStudentAnnouncements() {
+    clearMsg("studentAnnMsg");
+    const list = el("studentAnnList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/announcements", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("studentAnnMsg", data.error || "Could not load announcements.", "error");
+        return;
+      }
+
+      const announcements = data.announcements || [];
+      list.innerHTML = announcements.length
+        ? announcements.map(a => `
+            <div class="roster-item">
+              <p class="roster-item-name">${a.title}</p>
+              <p class="roster-item-meta">${new Date(a.created_at).toLocaleDateString()}</p>
+              <p style="margin-top:6px; white-space:pre-wrap;">${a.body}</p>
+            </div>
+          `).join("")
+        : `<div class="empty-state">No announcements yet.</div>`;
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("studentAnnMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshStudentAnn").addEventListener("click", loadStudentAnnouncements);
+
   async function loadStudentCbtList() {
     clearMsg("studentCbtMsg");
     const list = el("studentCbtList");
@@ -6359,6 +6439,148 @@ Answer: False</pre>
     cbtCurrentTestId = null;
     loadStudentCbtList();
   });
+
+
+  // =====================================================================
+  // Announcements
+  // =====================================================================
+  async function populateAnnClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("annClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("annAudience").addEventListener("change", (e) => {
+    el("annClassPickerBox").style.display = e.target.value === "class" ? "block" : "none";
+  });
+
+  el("annPostBtn").addEventListener("click", async () => {
+    clearMsg("annPostMsg");
+    const title = el("annTitle").value.trim();
+    const body = el("annBody").value.trim();
+    const audienceChoice = el("annAudience").value;
+
+    if (!title || !body) {
+      showMsg("annPostMsg", "Please enter a title and message.", "error");
+      return;
+    }
+
+    let audience = audienceChoice;
+    if (audienceChoice === "class") {
+      const classId = el("annClassSelect").value;
+      if (!classId) {
+        showMsg("annPostMsg", "Please select a class.", "error");
+        return;
+      }
+      audience = "class_" + classId;
+    }
+
+    const btn = el("annPostBtn");
+    btn.disabled = true;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ title, body, audience })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showMsg("annPostMsg", data.error || "Could not post announcement.", "error");
+        return;
+      }
+
+      showMsg("annPostMsg", data.message || "Posted.", "success");
+      el("annTitle").value = "";
+      el("annBody").value = "";
+      el("annAudience").value = "all";
+      el("annClassPickerBox").style.display = "none";
+      loadAnnouncements();
+    } catch (err) {
+      showMsg("annPostMsg", "Could not reach the portal server. Check your connection.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function audienceLabel(audience) {
+    if (audience === "all") return "Everyone";
+    if (audience === "staff") return "All Staff";
+    if (audience === "teachers") return "Teachers";
+    if (audience === "students") return "All Students";
+    if (audience === "primary") return "Primary";
+    if (audience === "secondary") return "Secondary";
+    if (audience.startsWith("class_")) return "A specific class";
+    return audience;
+  }
+
+  async function loadAnnouncements() {
+    clearMsg("annListMsg");
+    const list = el("annList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    const isAdmin = isAdminRole(currentAdminRole);
+    const path = isAdmin ? "/api/announcements/all" : "/api/announcements";
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + path, { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("annListMsg", data.error || "Could not load announcements.", "error");
+        return;
+      }
+
+      const announcements = data.announcements || [];
+      if (!announcements.length) {
+        list.innerHTML = `<div class="empty-state">No announcements yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = announcements.map(a => `
+        <div class="roster-item">
+          <p class="roster-item-name">${a.title}</p>
+          <p class="roster-item-meta">
+            ${audienceLabel(a.audience)} · ${new Date(a.created_at).toLocaleDateString()}
+            ${a.created_by_name ? " · Posted by " + a.created_by_name : ""}
+          </p>
+          <p style="margin-top:6px; white-space:pre-wrap;">${a.body}</p>
+          ${isAdmin ? `<a class="delete-link ann-delete-link" data-id="${a.id}" style="margin-top:8px; display:inline-block;">Delete</a>` : ""}
+        </div>
+      `).join("");
+
+      if (isAdmin) {
+        list.querySelectorAll(".ann-delete-link").forEach(link => {
+          link.addEventListener("click", async () => {
+            if (!confirm("Delete this announcement?")) return;
+            try {
+              const res = await fetchWithTimeout(API_BASE + "/api/announcements/" + link.dataset.id, { method: "DELETE", headers: authHeaders() });
+              const data = await res.json();
+              if (!res.ok) {
+                alert(data.error || "Could not delete announcement.");
+                return;
+              }
+              loadAnnouncements();
+            } catch (err) {
+              alert("Could not reach the portal server. Check your connection.");
+            }
+          });
+        });
+      }
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("annListMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshAnnouncements").addEventListener("click", loadAnnouncements);
 
 
   // ---------- Assignments: sub-tab switching (Create / View & Grade) ----------
