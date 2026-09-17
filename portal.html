@@ -2865,6 +2865,7 @@ Answer: False</pre>
 
   let currentAdminRole = null;
   let currentStudentId = null;
+  let currentStaffId = null;
   let currentLevelFilter = "both"; // 'primary' | 'secondary' | 'both'
 
   function levelBannerText(role, level) {
@@ -2912,6 +2913,7 @@ Answer: False</pre>
   }
 
   function showAdminDashboard(profile) {
+    currentStaffId = profile.id;
     el("loginView").style.display = "none";
     el("dashboard").classList.remove("active");
     el("adminShell").classList.add("active");
@@ -2950,6 +2952,7 @@ Answer: False</pre>
   }
 
   function showTeacherDashboard(profile) {
+    currentStaffId = profile.id;
     el("loginView").style.display = "none";
     el("dashboard").classList.remove("active");
     el("adminShell").classList.add("active");
@@ -2975,6 +2978,7 @@ Answer: False</pre>
   }
 
   function showCashierDashboard(profile) {
+    currentStaffId = profile.id;
     el("loginView").style.display = "none";
     el("dashboard").classList.remove("active");
     el("adminShell").classList.add("active");
@@ -5016,8 +5020,8 @@ Answer: False</pre>
           <table class="subjects-table">
             <thead>
               <tr>
-                <th>S/N</th><th>Subject</th><th>CA1<br><span class="sub">/20</span></th>
-                <th>CA2<br><span class="sub">/20</span></th><th>Exam<br><span class="sub">/60</span></th>
+                <th>S/N</th><th>Subject</th><th>CA1<br><span class="sub">/15</span></th>
+                <th>CA2<br><span class="sub">/15</span></th><th>Exam<br><span class="sub">/70</span></th>
                 <th>Total<br><span class="sub">/100</span></th><th>Grade</th><th>Remark</th>
               </tr>
             </thead>
@@ -7119,6 +7123,28 @@ Answer: False</pre>
 
   // ---------- Results: enter scores ----------
   async function populateResClassSelect() {
+    if (currentAdminRole === "teacher") {
+      try {
+        const res = await fetchWithTimeout(API_BASE + "/api/teacher-assignments?teacherId=" + currentStaffId, { method: "GET", headers: authHeaders() });
+        const data = await res.json();
+        const assignments = data.assignments || [];
+        const uniqueClasses = [];
+        const seen = new Set();
+        assignments.forEach(a => {
+          if (!seen.has(a.class_id)) {
+            seen.add(a.class_id);
+            uniqueClasses.push({ id: a.class_id, name: a.class_name });
+          }
+        });
+        el("resClassSelect").innerHTML = uniqueClasses.length
+          ? `<option value="">Select a class…</option>` + uniqueClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join("")
+          : `<option value="">No classes assigned to you yet</option>`;
+      } catch (err) {
+        el("resClassSelect").innerHTML = `<option value="">Could not load your assigned classes</option>`;
+      }
+      return;
+    }
+
     let classes = [];
     try {
       classes = await fetchClasses();
@@ -7135,6 +7161,23 @@ Answer: False</pre>
 
     if (!classId) {
       el("resSubjectSelect").innerHTML = `<option value="">Select a class first…</option>`;
+      return;
+    }
+
+    if (currentAdminRole === "teacher") {
+      try {
+        const res = await fetchWithTimeout(
+          API_BASE + "/api/teacher-assignments?teacherId=" + currentStaffId + "&classId=" + classId,
+          { method: "GET", headers: authHeaders() }
+        );
+        const data = await res.json();
+        const assignments = data.assignments || [];
+        el("resSubjectSelect").innerHTML = assignments.length
+          ? `<option value="">Select…</option>` + assignments.map(a => `<option value="${a.subject_id}">${a.subject_name}</option>`).join("")
+          : `<option value="">You're not assigned to any subject in this class</option>`;
+      } catch (err) {
+        el("resSubjectSelect").innerHTML = `<option value="">Could not load your assigned subjects</option>`;
+      }
       return;
     }
 
@@ -7199,16 +7242,16 @@ Answer: False</pre>
           <p class="result-entry-name">${s.student_name}</p>
           <div class="score-inputs">
             <div>
-              <label>CA1</label>
-              <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0">
+              <label>CA1 (/15)</label>
+              <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0" max="15">
             </div>
             <div>
-              <label>CA2</label>
-              <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0">
+              <label>CA2 (/15)</label>
+              <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0" max="15">
             </div>
             <div>
-              <label>Exam</label>
-              <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0">
+              <label>Exam (/70)</label>
+              <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0" max="70">
             </div>
           </div>
           <p class="grade-preview">Grade: <span class="grade-value">${s.grade || "—"}</span>${s.status ? " · " + s.status : ""}</p>
