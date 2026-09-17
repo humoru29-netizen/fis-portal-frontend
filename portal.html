@@ -2933,7 +2933,11 @@ Answer: False</pre>
       el("levelToggle").style.display = "flex";
     }
     applyLevelToggleUI();
-    applyToolVisibility(null);
+    if (profile.role === "general_admin") {
+      applyToolVisibility(null);
+    } else {
+      applyToolVisibility(["admissions", "announcements", "approvals", "assignments", "attendance", "cbt", "fees", "report-card", "results", "roster"]);
+    }
     applyResultsTabVisibility(false);
     applyCbtTabVisibility(false);
 
