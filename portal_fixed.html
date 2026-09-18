@@ -4310,7 +4310,7 @@ Answer: False</pre>
       );
 
       if (!result.ok) {
-        showMsg("attendanceSaveMsg", result.data.error || "Could not save attendance.", "error");
+        showMsg("attendanceSaveMsg", (result.data.error || "Could not save attendance.") + " [" + (result.data.detail || "") + "]", "error");
         return;
       }
 
