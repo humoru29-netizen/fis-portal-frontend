@@ -275,6 +275,16 @@
     border-bottom: 3px solid var(--gold);
   }
 
+  .admin-header.role-primary_admin {
+    background: #1B3A5C;
+    background-image: linear-gradient(180deg, #1B3A5C 0%, #0F2438 100%);
+  }
+
+  .admin-header.role-secondary_admin {
+    background: #1F5C3A;
+    background-image: linear-gradient(180deg, #1F5C3A 0%, #123825 100%);
+  }
+
   .admin-header-top {
     display: flex;
     align-items: center;
@@ -3001,6 +3011,11 @@ Answer: False</pre>
     el("adminRoleSubtitle").textContent = ROLE_LABELS[profile.role] || profile.role.replace(/_/g, " ");
     el("adminUserBadge").textContent = profile.name;
     el("levelBanner").style.display = "block";
+
+    document.querySelector(".admin-header").classList.remove("role-primary_admin", "role-secondary_admin");
+    if (profile.role === "primary_admin" || profile.role === "secondary_admin") {
+      document.querySelector(".admin-header").classList.add("role-" + profile.role);
+    }
 
     // Non-general admins are locked to their own level; hide the toggle.
     if (profile.role === "primary_admin") {
