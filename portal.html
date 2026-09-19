@@ -3386,6 +3386,8 @@ Answer: False</pre>
       loadClassesForManagement();
       populateClassDropdowns();
       loadSubjects();
+      populateTeacherSelects();
+      populateTaClassSelect();
     }
     // If the attendance panel is open, refresh its class dropdown against the new level.
     if (el("section-attendance").classList.contains("active")) {
@@ -4480,7 +4482,9 @@ Answer: False</pre>
 
   // ---------- Roster: teacher assignments ----------
   async function fetchTeachers() {
-    const data = await cachedGetJson("/api/teachers");
+    const level = classesQueryLevel();
+    const path = level ? "/api/teachers?level=" + level : "/api/teachers";
+    const data = await cachedGetJson(path);
     return data.teachers || [];
   }
 
