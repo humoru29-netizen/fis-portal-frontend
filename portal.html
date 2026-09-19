@@ -6,8 +6,8 @@
 <title>Faith International School, Itobe — Portal</title>
 <style>
   :root {
-    --maroon: #1B1613;
-    --maroon-dark: #0E0B09;
+    --maroon: #6E1423;
+    --maroon-dark: #4E0E19;
     --gold: #C28A2E;
     --ivory: #FBF8F2;
     --charcoal: #2A2420;
@@ -1097,6 +1097,7 @@
       <a id="navHome">Home</a>
       <a id="navAbout">About Us</a>
       <a id="navAdmission">Online Admission</a>
+      <a id="navResults">Results Portal</a>
       <a id="navContact">Contact Us</a>
     </nav>
   </header>
@@ -3006,6 +3007,13 @@ Answer: False</pre>
   el("navAdmission").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
     el("showAdmissionApply").click();
+  });
+  el("navResults").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    document.querySelector('#loginTabs .tab[data-tab="student"]').click();
+    el("loginView").style.display = "flex";
+    el("admissionApplyView").style.display = "none";
+    el("brandHeader").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   el("navContact").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
