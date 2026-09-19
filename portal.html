@@ -1556,6 +1556,11 @@
           <button type="button" id="loadResultsBtn" class="submit">Load Class</button>
           <div id="resultsLoadMsg" class="msg"></div>
 
+          <div id="resEntryModeToggle" class="roster-subnav" style="display:none;">
+            <button type="button" class="results-subtab active" id="resModeAllBtn">All names (enter all, then save)</button>
+            <button type="button" class="results-subtab" id="resModeOneBtn">One at a time (save &amp; continue)</button>
+          </div>
+
           <div id="resultsEntryList"></div>
         </div>
 
@@ -7591,6 +7596,232 @@ Answer: False</pre>
     }
   });
 
+  let resLoadedStudents = [];
+  let resLoadedContext = null; // { classId, subjectId, term, session }
+  let resEntryMode = "all"; // "all" | "one"
+  let resOneIndex = 0;
+
+  function resComputeGradeFor(ca1, ca2, exam) {
+    const total = (parseFloat(ca1) || 0) + (parseFloat(ca2) || 0) + (parseFloat(exam) || 0);
+    return { total, grade: computeGradeClient(total) };
+  }
+
+  async function resSubmitOne(studentName, studentId, ca1, ca2, exam) {
+    const { classId, subjectId, term, session } = resLoadedContext;
+    return submitOrQueue(
+      "POST",
+      "/api/results",
+      { studentId, classId, subjectId, term, session, ca1, ca2, exam },
+      "Result — " + studentName
+    );
+  }
+
+  el("resModeAllBtn").addEventListener("click", () => {
+    if (resEntryMode === "all") return;
+    resEntryMode = "all";
+    el("resModeAllBtn").classList.add("active");
+    el("resModeOneBtn").classList.remove("active");
+    renderResultsAllMode();
+  });
+
+  el("resModeOneBtn").addEventListener("click", () => {
+    if (resEntryMode === "one") return;
+    resEntryMode = "one";
+    el("resModeOneBtn").classList.add("active");
+    el("resModeAllBtn").classList.remove("active");
+    resOneIndex = 0;
+    renderResultsOneMode();
+  });
+
+  // ---------------- ALL NAMES: enter everything, then Save All ----------------
+  function renderResultsAllMode() {
+    const list = el("resultsEntryList");
+    if (!resLoadedStudents.length) {
+      list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+      return;
+    }
+
+    list.innerHTML = resLoadedStudents.map(s => `
+      <div class="result-entry-row" data-student-id="${s.student_id}">
+        <p class="result-entry-name">${s.student_name}</p>
+        <div class="score-inputs">
+          <div>
+            <label>CA1 (/15)</label>
+            <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0" max="15">
+          </div>
+          <div>
+            <label>CA2 (/15)</label>
+            <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0" max="15">
+          </div>
+          <div>
+            <label>Exam (/70)</label>
+            <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0" max="70">
+          </div>
+        </div>
+        <p class="grade-preview">Grade: <span class="grade-value">${s.grade || "—"}</span>${s.status ? " · " + s.status : ""}</p>
+      </div>
+    `).join("") + `
+      <button type="button" id="resSaveAllBtn" class="submit" style="margin-top:14px;">Save All</button>
+    `;
+
+    list.querySelectorAll(".result-entry-row").forEach(row => {
+      const recompute = () => {
+        const { total, grade } = resComputeGradeFor(
+          row.querySelector(".ca1-input").value,
+          row.querySelector(".ca2-input").value,
+          row.querySelector(".exam-input").value
+        );
+        row.querySelector(".grade-value").textContent = grade;
+      };
+      row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", recompute));
+    });
+
+    el("resSaveAllBtn").addEventListener("click", async () => {
+      const btn = el("resSaveAllBtn");
+      btn.disabled = true;
+      clearMsg("resultsLoadMsg");
+
+      const rows = list.querySelectorAll(".result-entry-row");
+      let saved = 0, failed = 0, queued = 0;
+
+      for (const row of rows) {
+        const studentId = row.dataset.studentId;
+        const name = row.querySelector(".result-entry-name").textContent;
+        const ca1 = row.querySelector(".ca1-input").value;
+        const ca2 = row.querySelector(".ca2-input").value;
+        const exam = row.querySelector(".exam-input").value;
+
+        // Skip rows with nothing entered at all.
+        if (ca1 === "" && ca2 === "" && exam === "") continue;
+
+        try {
+          const result = await resSubmitOne(name, studentId, ca1, ca2, exam);
+          if (!result.ok) {
+            failed++;
+            continue;
+          }
+          if (result.queued) {
+            queued++;
+            row.querySelector(".grade-value").textContent = resComputeGradeFor(ca1, ca2, exam).grade + " (pending sync)";
+          } else {
+            saved++;
+            row.querySelector(".grade-value").textContent = result.data.grade || "—";
+          }
+        } catch (err) {
+          failed++;
+        }
+      }
+
+      btn.disabled = false;
+      if (failed) {
+        showMsg("resultsLoadMsg", `Saved ${saved + queued} of ${rows.length}, ${failed} failed. Fix and try again.`, "error");
+      } else {
+        showMsg("resultsLoadMsg", queued ? `Saved ${saved}, ${queued} queued offline (will sync automatically).` : `Saved all ${saved} score(s).`, "success");
+      }
+    });
+  }
+
+  // ---------------- ONE AT A TIME: single student, Save & Continue ----------------
+  function renderResultsOneMode() {
+    const list = el("resultsEntryList");
+    if (!resLoadedStudents.length) {
+      list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+      return;
+    }
+    if (resOneIndex >= resLoadedStudents.length) {
+      list.innerHTML = `
+        <div class="empty-state">All ${resLoadedStudents.length} student(s) done for this subject.</div>
+        <button type="button" id="resOneRestartBtn" class="submit" style="margin-top:10px;">Review from the start</button>
+      `;
+      el("resOneRestartBtn").addEventListener("click", () => {
+        resOneIndex = 0;
+        renderResultsOneMode();
+      });
+      return;
+    }
+
+    const s = resLoadedStudents[resOneIndex];
+    list.innerHTML = `
+      <p style="color:#8a7a56; margin-bottom:6px;">Student ${resOneIndex + 1} of ${resLoadedStudents.length}</p>
+      <div class="result-entry-row" data-student-id="${s.student_id}">
+        <p class="result-entry-name">${s.student_name}</p>
+        <div class="score-inputs">
+          <div>
+            <label>CA1 (/15)</label>
+            <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0" max="15">
+          </div>
+          <div>
+            <label>CA2 (/15)</label>
+            <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0" max="15">
+          </div>
+          <div>
+            <label>Exam (/70)</label>
+            <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0" max="70">
+          </div>
+        </div>
+        <p class="grade-preview">Grade: <span class="grade-value">${s.grade || "—"}</span></p>
+      </div>
+      <div style="margin-top:12px;">
+        ${resOneIndex > 0 ? `<button type="button" id="resOnePrevBtn" class="submit" style="width:auto; display:inline-block;">← Back</button>` : ""}
+        <button type="button" id="resOneSaveBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px;">Save &amp; Continue</button>
+        <button type="button" id="resOneSkipBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px; background:#8a7a56;">Skip</button>
+      </div>
+    `;
+
+    const row = list.querySelector(".result-entry-row");
+    row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", () => {
+      const { grade } = resComputeGradeFor(
+        row.querySelector(".ca1-input").value,
+        row.querySelector(".ca2-input").value,
+        row.querySelector(".exam-input").value
+      );
+      row.querySelector(".grade-value").textContent = grade;
+    }));
+
+    if (resOneIndex > 0) {
+      el("resOnePrevBtn").addEventListener("click", () => {
+        resOneIndex--;
+        renderResultsOneMode();
+      });
+    }
+
+    el("resOneSkipBtn").addEventListener("click", () => {
+      resOneIndex++;
+      renderResultsOneMode();
+    });
+
+    el("resOneSaveBtn").addEventListener("click", async () => {
+      const btn = el("resOneSaveBtn");
+      btn.disabled = true;
+      clearMsg("resultsLoadMsg");
+
+      const ca1 = row.querySelector(".ca1-input").value;
+      const ca2 = row.querySelector(".ca2-input").value;
+      const exam = row.querySelector(".exam-input").value;
+
+      try {
+        const result = await resSubmitOne(s.student_name, s.student_id, ca1, ca2, exam);
+        if (!result.ok) {
+          showMsg("resultsLoadMsg", result.data.error || "Could not save score.", "error");
+          btn.disabled = false;
+          return;
+        }
+        // keep the in-memory copy in sync in case they go Back later
+        s.ca1 = ca1 === "" ? null : Number(ca1);
+        s.ca2 = ca2 === "" ? null : Number(ca2);
+        s.exam = exam === "" ? null : Number(exam);
+        s.grade = result.queued ? resComputeGradeFor(ca1, ca2, exam).grade : (result.data.grade || null);
+
+        showMsg("resultsLoadMsg", result.queued ? "Saved offline — will sync automatically." : "Saved.", "success");
+        resOneIndex++;
+        renderResultsOneMode();
+      } catch (err) {
+        showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+        btn.disabled = false;
+      }
+    });
+  }
+
   el("loadResultsBtn").addEventListener("click", async () => {
     clearMsg("resultsLoadMsg");
     const list = el("resultsEntryList");
@@ -7603,6 +7834,7 @@ Answer: False</pre>
     if (!classId || !subjectId || !term || !session) {
       showMsg("resultsLoadMsg", "Please select a class, subject, term, and session.", "error");
       list.innerHTML = "";
+      el("resEntryModeToggle").style.display = "none";
       return;
     }
 
@@ -7617,87 +7849,30 @@ Answer: False</pre>
 
       if (!res.ok) {
         list.innerHTML = "";
+        el("resEntryModeToggle").style.display = "none";
         showMsg("resultsLoadMsg", data.error || "Could not load results.", "error");
         return;
       }
 
-      const students = data.students || [];
-      if (!students.length) {
+      resLoadedStudents = data.students || [];
+      resLoadedContext = { classId, subjectId, term, session };
+      resOneIndex = 0;
+
+      if (!resLoadedStudents.length) {
         list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
+        el("resEntryModeToggle").style.display = "none";
         return;
       }
 
-      list.innerHTML = students.map(s => `
-        <div class="result-entry-row" data-student-id="${s.student_id}">
-          <p class="result-entry-name">${s.student_name}</p>
-          <div class="score-inputs">
-            <div>
-              <label>CA1 (/15)</label>
-              <input type="number" class="ca1-input" value="${s.ca1 !== null && s.ca1 !== undefined ? s.ca1 : ""}" min="0" max="15">
-            </div>
-            <div>
-              <label>CA2 (/15)</label>
-              <input type="number" class="ca2-input" value="${s.ca2 !== null && s.ca2 !== undefined ? s.ca2 : ""}" min="0" max="15">
-            </div>
-            <div>
-              <label>Exam (/70)</label>
-              <input type="number" class="exam-input" value="${s.exam !== null && s.exam !== undefined ? s.exam : ""}" min="0" max="70">
-            </div>
-          </div>
-          <p class="grade-preview">Grade: <span class="grade-value">${s.grade || "—"}</span>${s.status ? " · " + s.status : ""}</p>
-          <button type="button" class="submit save-result-btn">Save</button>
-        </div>
-      `).join("");
-
-      list.querySelectorAll(".result-entry-row").forEach(row => {
-        const recompute = () => {
-          const ca1 = parseFloat(row.querySelector(".ca1-input").value) || 0;
-          const ca2 = parseFloat(row.querySelector(".ca2-input").value) || 0;
-          const exam = parseFloat(row.querySelector(".exam-input").value) || 0;
-          const total = ca1 + ca2 + exam;
-          row.querySelector(".grade-value").textContent = computeGradeClient(total);
-        };
-        row.querySelectorAll("input").forEach(inp => inp.addEventListener("input", recompute));
-
-        row.querySelector(".save-result-btn").addEventListener("click", async () => {
-          const btn = row.querySelector(".save-result-btn");
-          btn.disabled = true;
-          clearMsg("resultsLoadMsg");
-
-          try {
-            const ca1 = row.querySelector(".ca1-input").value;
-            const ca2 = row.querySelector(".ca2-input").value;
-            const exam = row.querySelector(".exam-input").value;
-
-            const result = await submitOrQueue(
-              "POST",
-              "/api/results",
-              { studentId: row.dataset.studentId, classId, subjectId, term, session, ca1, ca2, exam },
-              "Result — " + (row.querySelector(".result-entry-name")?.textContent || row.dataset.studentId)
-            );
-
-            if (!result.ok) {
-              showMsg("resultsLoadMsg", result.data.error || "Could not save score.", "error");
-              return;
-            }
-
-            if (result.queued) {
-              const total = (parseFloat(ca1) || 0) + (parseFloat(ca2) || 0) + (parseFloat(exam) || 0);
-              row.querySelector(".grade-value").textContent = computeGradeClient(total) + " (pending sync)";
-              showMsg("resultsLoadMsg", "Saved offline — will sync automatically.", "success");
-            } else {
-              row.querySelector(".grade-value").textContent = result.data.grade || "—";
-              showMsg("resultsLoadMsg", "Saved.", "success");
-            }
-          } catch (err) {
-            showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
-          } finally {
-            btn.disabled = false;
-          }
-        });
-      });
+      el("resEntryModeToggle").style.display = "flex";
+      if (resEntryMode === "one") {
+        renderResultsOneMode();
+      } else {
+        renderResultsAllMode();
+      }
     } catch (err) {
       list.innerHTML = "";
+      el("resEntryModeToggle").style.display = "none";
       showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   });
