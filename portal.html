@@ -40,6 +40,69 @@
     padding: 28px 20px 22px;
     text-align: center;
     border-bottom: 3px solid var(--gold);
+    position: relative;
+  }
+
+  .nav-toggle {
+    position: absolute;
+    top: 18px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .nav-toggle span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--gold);
+  }
+
+  .nav-menu {
+    display: none;
+    position: absolute;
+    top: 62px;
+    right: 16px;
+    z-index: 30;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+    overflow: hidden;
+    min-width: 190px;
+    text-align: left;
+  }
+
+  .nav-menu.open {
+    display: block;
+  }
+
+  .nav-menu a {
+    display: block;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--charcoal);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .nav-menu a:last-child {
+    border-bottom: none;
+  }
+
+  .nav-menu a:active {
+    background: #FAF6EE;
   }
 
   header.brand .crest {
@@ -1023,13 +1086,22 @@
 <!-- ===== LOGIN VIEW ===== -->
 <div id="loginView" style="width:100%; display:flex; flex-direction:column; align-items:center;">
 
-  <header class="brand">
+  <header class="brand" id="brandHeader">
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <div class="crest">FIS</div>
     <h1>Faith International School, Itobe</h1>
     <p class="motto">"In God We Trust"</p>
+    <nav class="nav-menu" id="navMenu">
+      <a id="navHome">Home</a>
+      <a id="navAbout">About Us</a>
+      <a id="navAdmission">Online Admission</a>
+      <a id="navContact">Contact Us</a>
+    </nav>
   </header>
 
-  <section class="hero-about">
+  <section class="hero-about" id="heroAbout">
     <p>Faith International School, Itobe (FISS) is committed to academic excellence, sound moral discipline, and holistic student development. Guided by our trust in God, we empower young minds to discover their potential and excel as future leaders.</p>
   </section>
 
@@ -1188,7 +1260,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer id="footerContact">
     <div class="footer-contact">
       Ofu Local Government Area of Kogi State. Behind Deeper Life Bible Church, Itobe<br>
       Tel: 09152277041 &nbsp;|&nbsp; Email: info@faithinternational.com.ng
@@ -2912,6 +2984,32 @@ Answer: False</pre>
   el("backToLoginFromApply").addEventListener("click", () => {
     el("admissionApplyView").style.display = "none";
     el("loginView").style.display = "flex";
+  });
+
+  // ---------- Landing page nav menu ----------
+  el("navToggle").addEventListener("click", () => {
+    el("navMenu").classList.toggle("open");
+  });
+  document.addEventListener("click", (e) => {
+    if (!el("navMenu").contains(e.target) && e.target !== el("navToggle") && !el("navToggle").contains(e.target)) {
+      el("navMenu").classList.remove("open");
+    }
+  });
+  el("navHome").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("brandHeader").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  el("navAbout").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("heroAbout").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  el("navAdmission").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("showAdmissionApply").click();
+  });
+  el("navContact").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("footerContact").scrollIntoView({ behavior: "smooth", block: "end" });
   });
 
   el("admissionApplyForm").addEventListener("submit", async (e) => {
