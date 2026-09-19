@@ -71,6 +71,84 @@
     color: #E9D8C9;
   }
 
+  header.brand p.motto {
+    margin-top: 4px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--gold);
+    letter-spacing: 0.3px;
+  }
+
+  .hero-about {
+    width: 100%;
+    max-width: 460px;
+    padding: 18px 24px 2px;
+    text-align: center;
+  }
+
+  .hero-about p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--charcoal);
+  }
+
+  .highlights {
+    width: 100%;
+    max-width: 460px;
+    padding: 18px 20px 2px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .highlight-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .highlight-icon {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 8px;
+    border-radius: 8px;
+    background: var(--gold);
+    color: var(--maroon-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .highlight-card h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 12.5px;
+    margin: 0 0 4px;
+    color: var(--maroon);
+  }
+
+  .highlight-card p {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  footer {
+    text-align: center;
+  }
+
+  .footer-contact {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 6px;
+  }
+
   main {
     width: 100%;
     max-width: 460px;
@@ -948,8 +1026,45 @@
   <header class="brand">
     <div class="crest">FIS</div>
     <h1>Faith International School, Itobe</h1>
-    <p>Portal Sign In</p>
+    <p class="motto">"In God We Trust"</p>
   </header>
+
+  <section class="hero-about">
+    <p>Faith International School, Itobe (FISS) is committed to academic excellence, sound moral discipline, and holistic student development. Guided by our trust in God, we empower young minds to discover their potential and excel as future leaders.</p>
+  </section>
+
+  <section class="highlights">
+    <div class="highlight-card">
+      <div class="highlight-icon">&#9770;</div>
+      <h3>Faith &amp; Moral Discipline</h3>
+      <p>A values-driven environment guided by our motto, nurturing upright character.</p>
+    </div>
+    <div class="highlight-card">
+      <div class="highlight-icon">&#127891;</div>
+      <h3>Dedicated Teachers</h3>
+      <p>Passionate, subject-qualified educators focused on helping students excel in exams.</p>
+    </div>
+    <div class="highlight-card">
+      <div class="highlight-icon">&#128737;</div>
+      <h3>Safe &amp; Secure Campus</h3>
+      <p>A fully monitored, serene learning environment.</p>
+    </div>
+    <div class="highlight-card">
+      <div class="highlight-icon">&#128218;</div>
+      <h3>WAEC &amp; NECO Prep</h3>
+      <p>Focused academic coaching and consistent exam-readiness.</p>
+    </div>
+    <div class="highlight-card">
+      <div class="highlight-icon">&#128101;</div>
+      <h3>Small Class Sizes</h3>
+      <p>Controlled student counts ensuring personal attention for every learner.</p>
+    </div>
+    <div class="highlight-card">
+      <div class="highlight-icon">&#128205;</div>
+      <h3>Community Location</h3>
+      <p>An easily accessible campus right here in Itobe.</p>
+    </div>
+  </section>
 
   <main>
     <div class="card">
@@ -1073,7 +1188,13 @@
     </div>
   </main>
 
-  <footer>&copy; Faith International School, Itobe</footer>
+  <footer>
+    <div class="footer-contact">
+      Ofu Local Government Area of Kogi State. Behind Deeper Life Bible Church, Itobe<br>
+      Tel: 09152277041 &nbsp;|&nbsp; Email: info@faithinternational.com.ng
+    </div>
+    &copy; Faith International School, Itobe
+  </footer>
 </div>
 
 <!-- ===== PUBLIC ADMISSION APPLICATION ===== -->
