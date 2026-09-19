@@ -201,6 +201,61 @@
     margin: 0;
   }
 
+  .leadership-section {
+    width: 100%;
+    max-width: 460px;
+    padding: 18px 20px 2px;
+    text-align: center;
+  }
+
+  .leadership-section h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    color: var(--maroon);
+    margin: 0 0 12px;
+  }
+
+  .leadership-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .leader-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .leader-card h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 14.5px;
+    margin: 0 0 2px;
+    color: var(--charcoal);
+  }
+
+  .leader-card .leader-title {
+    font-size: 12.5px;
+    color: var(--gold);
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .leader-card .leader-phone {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+
+  .leader-card .leader-bio {
+    font-size: 12.5px;
+    color: var(--charcoal);
+    line-height: 1.5;
+    margin: 0;
+  }
+
   footer {
     text-align: center;
   }
@@ -739,7 +794,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab, .cbt-subtab, .res-mode-tab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab, .cbt-subtab, .res-mode-tab, .sc-subtab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -751,20 +806,20 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child, .cbt-subtab:last-child, .res-mode-tab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child, .cbt-subtab:last-child, .res-mode-tab:last-child, .sc-subtab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active, .cbt-subtab.active, .res-mode-tab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active, .cbt-subtab.active, .res-mode-tab.active, .sc-subtab.active {
     background: var(--maroon);
     color: #fff;
   }
 
-  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel, .rc-subpanel, .cbt-subpanel {
+  .roster-subpanel, .assign-subpanel, .results-subpanel, .admissions-subpanel, .attendance-subpanel, .fees-subpanel, .rc-subpanel, .cbt-subpanel, .sc-subpanel {
     display: none;
   }
 
-  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active, .rc-subpanel.active, .cbt-subpanel.active {
+  .roster-subpanel.active, .assign-subpanel.active, .results-subpanel.active, .admissions-subpanel.active, .attendance-subpanel.active, .fees-subpanel.active, .rc-subpanel.active, .cbt-subpanel.active, .sc-subpanel.active {
     display: block;
   }
 
@@ -1095,7 +1150,9 @@
     <p class="motto">"In God We Trust"</p>
     <nav class="nav-menu" id="navMenu">
       <a id="navHome">Home</a>
+      <a id="navCbt">CBT Exam</a>
       <a id="navAbout">About Us</a>
+      <a id="navLeadership">Leadership</a>
       <a id="navAdmission">Online Admission</a>
       <a id="navResults">Results Portal</a>
       <a id="navContact">Contact Us</a>
@@ -1103,7 +1160,7 @@
   </header>
 
   <section class="hero-about" id="heroAbout">
-    <p>Faith International School, Itobe (FISS) is committed to academic excellence, sound moral discipline, and holistic student development. Guided by our trust in God, we empower young minds to discover their potential and excel as future leaders.</p>
+    <p id="heroAboutText">Faith International School, Itobe (FISS) is committed to academic excellence, sound moral discipline, and holistic student development. Guided by our trust in God, we empower young minds to discover their potential and excel as future leaders.</p>
   </section>
 
   <section class="highlights">
@@ -1137,6 +1194,11 @@
       <h3>Community Location</h3>
       <p>An easily accessible campus right here in Itobe.</p>
     </div>
+  </section>
+
+  <section class="leadership-section" id="leadershipSection" style="display:none;">
+    <h2>Our Leadership</h2>
+    <div id="leadershipList" class="leadership-list"></div>
   </section>
 
   <main>
@@ -1514,6 +1576,10 @@
       <button class="tool-tile" data-tool="announcements">
         <span class="tool-icon">📢</span>
         <span class="tool-label">Announcements</span>
+      </button>
+      <button class="tool-tile" data-tool="site-content">
+        <span class="tool-icon">🏛️</span>
+        <span class="tool-label">Site Content</span>
       </button>
     </div>
 
@@ -2679,6 +2745,53 @@ Answer: False</pre>
         <div id="annList" style="margin-top:14px;"></div>
       </div>
 
+      <!-- ===== SITE CONTENT (About Us + Leadership Directory) — general_admin only ===== -->
+      <div id="section-site-content" class="admin-section">
+        <h3>Site Content</h3>
+        <p class="sub">Controls what shows on the public landing page.</p>
+
+        <div class="results-subtabs" style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="sc-subtab active" data-sctab="about">About Us</button>
+          <button class="sc-subtab" data-sctab="leadership">Leadership</button>
+        </div>
+
+        <!-- ---- ABOUT US ---- -->
+        <div id="sc-about" class="sc-subpanel active">
+          <label for="scAboutText">About Us text (shown on the landing page)</label>
+          <textarea id="scAboutText" rows="6" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
+          <button type="button" id="scAboutSaveBtn" class="submit" style="margin-top:10px;">Save About Us</button>
+          <div id="scAboutMsg" class="msg"></div>
+        </div>
+
+        <!-- ---- LEADERSHIP ---- -->
+        <div id="sc-leadership" class="sc-subpanel">
+          <div class="pin-gen-box">
+            <h4 style="margin-top:0;" id="scLeaderFormTitle">Add a Leader</h4>
+
+            <label for="scLeaderName">Name</label>
+            <input type="text" id="scLeaderName" placeholder="e.g. Rev. John Adeyemi">
+
+            <label for="scLeaderTitle">Title / Role</label>
+            <input type="text" id="scLeaderTitle" placeholder="e.g. Proprietor">
+
+            <label for="scLeaderPhone">Phone Number(s)</label>
+            <input type="text" id="scLeaderPhone" placeholder="e.g. 09152277041, 08036654156">
+
+            <label for="scLeaderBio">Bio</label>
+            <textarea id="scLeaderBio" rows="3" style="width:100%; padding:10px; border-radius:7px; border:1px solid #ccc; font-family:inherit;"></textarea>
+
+            <input type="hidden" id="scLeaderId" value="">
+            <button type="button" id="scLeaderSaveBtn" class="submit">Add Leader</button>
+            <a class="refresh-link" id="scLeaderCancelEdit" style="display:none; margin-left:10px;">Cancel edit</a>
+            <div id="scLeaderFormMsg" class="msg"></div>
+          </div>
+
+          <a class="refresh-link" id="refreshLeadership">Refresh</a>
+          <div id="scLeaderListMsg" class="msg"></div>
+          <div id="scLeaderList" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -3004,6 +3117,10 @@ Answer: False</pre>
     el("navMenu").classList.remove("open");
     el("heroAbout").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  el("navLeadership").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("leadershipSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   el("navAdmission").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
     el("showAdmissionApply").click();
@@ -3015,10 +3132,55 @@ Answer: False</pre>
     el("admissionApplyView").style.display = "none";
     el("brandHeader").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  el("navCbt").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    document.querySelector('#loginTabs .tab[data-tab="student"]').click();
+    el("loginView").style.display = "flex";
+    el("admissionApplyView").style.display = "none";
+    el("brandHeader").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   el("navContact").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
     el("footerContact").scrollIntoView({ behavior: "smooth", block: "end" });
   });
+
+  // ---------- Public landing page: About Us + Leadership (admin-editable) ----------
+  (async function loadPublicAboutUs() {
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/public/about", { method: "GET" });
+      const data = await res.json();
+      if (res.ok && data.value) {
+        el("heroAboutText").textContent = data.value;
+      }
+    } catch (err) {
+      // Keep the default About Us text already in the page.
+    }
+  })();
+
+  (async function loadPublicLeadership() {
+    const section = el("leadershipSection");
+    const list = el("leadershipList");
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/public/leadership", { method: "GET" });
+      const data = await res.json();
+      const leaders = (res.ok && data.leadership) || [];
+      if (!leaders.length) {
+        section.style.display = "none";
+        return;
+      }
+      section.style.display = "block";
+      list.innerHTML = leaders.map(l => `
+        <div class="leader-card">
+          <h3>${l.name}</h3>
+          <p class="leader-title">${l.title}</p>
+          ${l.phone ? `<p class="leader-phone">${l.phone}</p>` : ""}
+          ${l.bio ? `<p class="leader-bio">${l.bio}</p>` : ""}
+        </div>
+      `).join("");
+    } catch (err) {
+      section.style.display = "none";
+    }
+  })();
 
   el("admissionApplyForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -3521,6 +3683,10 @@ Answer: False</pre>
       el("announcementsPostBox").style.display = isAdminRole(currentAdminRole) ? "block" : "none";
       if (isAdminRole(currentAdminRole)) populateAnnClassSelect();
       loadAnnouncements();
+    }
+    if (toolName === "site-content") {
+      loadAboutUsAdmin();
+      loadLeadershipAdmin();
     }
   }
 
@@ -7495,6 +7661,176 @@ Answer: False</pre>
   }
 
   el("refreshAnnouncements").addEventListener("click", loadAnnouncements);
+
+  // =====================================================================
+  // SITE CONTENT (About Us + Leadership Directory) — general_admin only
+  // =====================================================================
+
+  document.querySelectorAll(".sc-subtab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sc-subtab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".sc-subpanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      el("sc-" + btn.dataset.sctab).classList.add("active");
+    });
+  });
+
+  // ---------- About Us ----------
+  async function loadAboutUsAdmin() {
+    clearMsg("scAboutMsg");
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/public/about", { method: "GET" });
+      const data = await res.json();
+      el("scAboutText").value = data.value || "";
+    } catch (err) {
+      showMsg("scAboutMsg", "Could not load About Us text.", "error");
+    }
+  }
+
+  el("scAboutSaveBtn").addEventListener("click", async () => {
+    clearMsg("scAboutMsg");
+    const value = el("scAboutText").value.trim();
+    if (!value) {
+      showMsg("scAboutMsg", "About Us text can't be empty.", "error");
+      return;
+    }
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/settings/about", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ value })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("scAboutMsg", data.error || "Could not save About Us.", "error");
+        return;
+      }
+      showMsg("scAboutMsg", "About Us updated.", "success");
+    } catch (err) {
+      showMsg("scAboutMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  });
+
+  // ---------- Leadership Directory ----------
+  function resetLeaderForm() {
+    el("scLeaderId").value = "";
+    el("scLeaderName").value = "";
+    el("scLeaderTitle").value = "";
+    el("scLeaderPhone").value = "";
+    el("scLeaderBio").value = "";
+    el("scLeaderFormTitle").textContent = "Add a Leader";
+    el("scLeaderSaveBtn").textContent = "Add Leader";
+    el("scLeaderCancelEdit").style.display = "none";
+  }
+
+  el("scLeaderCancelEdit").addEventListener("click", resetLeaderForm);
+
+  async function loadLeadershipAdmin() {
+    clearMsg("scLeaderListMsg");
+    const list = el("scLeaderList");
+    list.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/leadership", { method: "GET", headers: authHeaders() });
+      const data = await res.json();
+
+      if (!res.ok) {
+        list.innerHTML = "";
+        showMsg("scLeaderListMsg", data.error || "Could not load leadership list.", "error");
+        return;
+      }
+
+      const leaders = data.leadership || [];
+      if (!leaders.length) {
+        list.innerHTML = `<div class="empty-state">No leaders added yet.</div>`;
+        return;
+      }
+
+      list.innerHTML = leaders.map(l => `
+        <div class="roster-item">
+          <p class="roster-item-name">${l.name} — ${l.title}</p>
+          <p class="roster-item-meta">${l.phone ? l.phone : "No phone on file"}</p>
+          ${l.bio ? `<p style="margin-top:6px; white-space:pre-wrap;">${l.bio}</p>` : ""}
+          <a class="refresh-link sc-leader-edit-link" data-id="${l.id}" style="margin-top:8px; display:inline-block;">Edit</a>
+          <a class="delete-link sc-leader-delete-link" data-id="${l.id}" style="margin-top:8px; margin-left:12px; display:inline-block;">Delete</a>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".sc-leader-edit-link").forEach(link => {
+        link.addEventListener("click", () => {
+          const leader = leaders.find(l => l.id === link.dataset.id);
+          if (!leader) return;
+          el("scLeaderId").value = leader.id;
+          el("scLeaderName").value = leader.name;
+          el("scLeaderTitle").value = leader.title;
+          el("scLeaderPhone").value = leader.phone || "";
+          el("scLeaderBio").value = leader.bio || "";
+          el("scLeaderFormTitle").textContent = "Edit Leader";
+          el("scLeaderSaveBtn").textContent = "Save Changes";
+          el("scLeaderCancelEdit").style.display = "inline-block";
+          el("scLeaderName").scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+
+      list.querySelectorAll(".sc-leader-delete-link").forEach(link => {
+        link.addEventListener("click", async () => {
+          if (!confirm("Remove this leader from the directory?")) return;
+          try {
+            const res = await fetchWithTimeout(API_BASE + "/api/leadership/" + link.dataset.id, { method: "DELETE", headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) {
+              alert(data.error || "Could not remove this leader.");
+              return;
+            }
+            loadLeadershipAdmin();
+          } catch (err) {
+            alert("Could not reach the portal server. Check your connection.");
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "";
+      showMsg("scLeaderListMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  }
+
+  el("refreshLeadership").addEventListener("click", loadLeadershipAdmin);
+
+  el("scLeaderSaveBtn").addEventListener("click", async () => {
+    clearMsg("scLeaderFormMsg");
+    const id = el("scLeaderId").value;
+    const name = el("scLeaderName").value.trim();
+    const title = el("scLeaderTitle").value.trim();
+    const phone = el("scLeaderPhone").value.trim();
+    const bio = el("scLeaderBio").value.trim();
+
+    if (!name || !title) {
+      showMsg("scLeaderFormMsg", "Name and Title are required.", "error");
+      return;
+    }
+
+    const isEdit = !!id;
+    const path = isEdit ? "/api/leadership/" + id : "/api/leadership";
+    const method = isEdit ? "PATCH" : "POST";
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + path, {
+        method,
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ name, title, phone, bio })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMsg("scLeaderFormMsg", data.error || "Could not save this leader.", "error");
+        return;
+      }
+      showMsg("scLeaderFormMsg", isEdit ? "Leader updated." : "Leader added.", "success");
+      resetLeaderForm();
+      loadLeadershipAdmin();
+    } catch (err) {
+      showMsg("scLeaderFormMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  });
 
   // ---------- Announcements: running ticker ----------
   async function renderTicker(barId, trackId) {
