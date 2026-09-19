@@ -2960,11 +2960,29 @@ Answer: False</pre>
     return "Viewing " + level.charAt(0).toUpperCase() + level.slice(1) + " level as " + roleLabel + ". Full access to all " + level + " admin tools below.";
   }
 
+  function applyHeaderColorForContext() {
+    const header = document.querySelector(".admin-header");
+    header.classList.remove("role-primary_admin", "role-secondary_admin");
+
+    // A dedicated primary/secondary admin account always shows its own color.
+    if (currentAdminRole === "primary_admin" || currentAdminRole === "secondary_admin") {
+      header.classList.add("role-" + currentAdminRole);
+      return;
+    }
+    // A general admin's header follows whichever level they're currently viewing.
+    if (currentAdminRole === "general_admin") {
+      if (currentLevelFilter === "primary") header.classList.add("role-primary_admin");
+      else if (currentLevelFilter === "secondary") header.classList.add("role-secondary_admin");
+      // "both" leaves it at the default maroon.
+    }
+  }
+
   function applyLevelToggleUI() {
     document.querySelectorAll("#levelToggle button").forEach(b => {
       b.classList.toggle("active", b.dataset.level === currentLevelFilter);
     });
     el("levelBanner").textContent = levelBannerText(currentAdminRole, currentLevelFilter);
+    applyHeaderColorForContext();
   }
 
   function setLevelFilter(level) {
@@ -3011,11 +3029,6 @@ Answer: False</pre>
     el("adminRoleSubtitle").textContent = ROLE_LABELS[profile.role] || profile.role.replace(/_/g, " ");
     el("adminUserBadge").textContent = profile.name;
     el("levelBanner").style.display = "block";
-
-    document.querySelector(".admin-header").classList.remove("role-primary_admin", "role-secondary_admin");
-    if (profile.role === "primary_admin" || profile.role === "secondary_admin") {
-      document.querySelector(".admin-header").classList.add("role-" + profile.role);
-    }
 
     // Non-general admins are locked to their own level; hide the toggle.
     if (profile.role === "primary_admin") {
