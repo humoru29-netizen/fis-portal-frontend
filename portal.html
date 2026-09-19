@@ -588,7 +588,7 @@
     margin-bottom: 18px;
   }
 
-  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab, .cbt-subtab {
+  .roster-subtab, .assign-subtab, .results-subtab, .admissions-subtab, .attendance-subtab, .fees-subtab, .rc-subtab, .cbt-subtab, .res-mode-tab {
     flex: 1;
     padding: 10px;
     font-size: 13px;
@@ -600,11 +600,11 @@
     cursor: pointer;
   }
 
-  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child, .cbt-subtab:last-child {
+  .roster-subtab:last-child, .assign-subtab:last-child, .results-subtab:last-child, .admissions-subtab:last-child, .attendance-subtab:last-child, .fees-subtab:last-child, .rc-subtab:last-child, .cbt-subtab:last-child, .res-mode-tab:last-child {
     border-right: none;
   }
 
-  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active, .cbt-subtab.active {
+  .roster-subtab.active, .assign-subtab.active, .results-subtab.active, .admissions-subtab.active, .attendance-subtab.active, .fees-subtab.active, .rc-subtab.active, .cbt-subtab.active, .res-mode-tab.active {
     background: var(--maroon);
     color: #fff;
   }
@@ -1523,6 +1523,7 @@
         <div class="roster-subnav">
           <button class="results-subtab active" data-resultstab="enter">Enter Scores</button>
           <button class="results-subtab" data-resultstab="approve">Approve</button>
+          <button class="results-subtab" id="resReportsTabBtn" data-resultstab="reports" style="display:none;">Class Reports</button>
         </div>
 
         <!-- ---------- ENTER SCORES ---------- -->
@@ -1557,8 +1558,8 @@
           <div id="resultsLoadMsg" class="msg"></div>
 
           <div id="resEntryModeToggle" class="roster-subnav" style="display:none;">
-            <button type="button" class="results-subtab active" id="resModeAllBtn">All names (enter all, then save)</button>
-            <button type="button" class="results-subtab" id="resModeOneBtn">One at a time (save &amp; continue)</button>
+            <button type="button" class="res-mode-tab active" id="resModeAllBtn">All names (enter all, then save)</button>
+            <button type="button" class="res-mode-tab" id="resModeOneBtn">One at a time (save &amp; continue)</button>
           </div>
 
           <div id="resPrintButtons" style="display:none; margin-top:10px;">
@@ -1598,6 +1599,41 @@
           <div id="pendingResultsMsg" class="msg"></div>
 
           <div id="pendingResultsList"></div>
+        </div>
+
+        <!-- ---------- CLASS REPORTS (admin only) ---------- -->
+        <div id="results-reports" class="results-subpanel">
+          <p class="sub">Whole-class results and CA lists across every subject — for the general admin.</p>
+
+          <label for="rrClassSelect">Class</label>
+          <select id="rrClassSelect">
+            <option value="">Select a class…</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="rrTermSelect">Term</label>
+              <select id="rrTermSelect">
+                <option value="">Select…</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+            <div>
+              <label for="rrSessionInput">Session</label>
+              <input type="text" id="rrSessionInput" placeholder="2026/2027">
+            </div>
+          </div>
+
+          <button type="button" id="rrGenerateBtn" class="submit">Generate</button>
+          <div id="rrMsg" class="msg"></div>
+
+          <div id="rrPrintButtons" style="display:none; margin-top:10px;">
+            <button type="button" id="rrPrintMasterBtn" class="submit" style="width:auto; display:inline-block;">🖨️ General Master List</button>
+            <button type="button" id="rrPrintCaFilledBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px;">🖨️ General CA List (Filled)</button>
+            <button type="button" id="rrPrintCaBlankBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px;">🖨️ General CA List (Blank)</button>
+          </div>
         </div>
       </div>
 
@@ -2862,18 +2898,22 @@ Answer: False</pre>
   function applyResultsTabVisibility(isTeacherRole) {
     const approveTab = document.querySelector('.results-subtab[data-resultstab="approve"]');
     const enterTab = document.querySelector('.results-subtab[data-resultstab="enter"]');
+    const reportsTab = el("resReportsTabBtn");
     const subnav = approveTab ? approveTab.closest(".roster-subnav") : null;
     const tileLabel = el("resultsToolLabel");
 
     if (isTeacherRole) {
       if (approveTab) approveTab.style.display = "none";
+      if (reportsTab) reportsTab.style.display = "none";
       if (subnav) subnav.style.display = "none";
       el("results-approve").classList.remove("active");
+      el("results-reports").classList.remove("active");
       if (enterTab) enterTab.classList.add("active");
       el("results-enter").classList.add("active");
       if (tileLabel) tileLabel.textContent = "Enter Scores";
     } else {
       if (approveTab) approveTab.style.display = "";
+      if (reportsTab) reportsTab.style.display = "";
       if (subnav) subnav.style.display = "flex";
       if (tileLabel) tileLabel.textContent = "Results Approval";
     }
@@ -2947,6 +2987,7 @@ Answer: False</pre>
     if (el("section-results").classList.contains("active")) {
       populateResClassSelect();
       populateApResClassSelect();
+      populateRrClassSelect();
     }
   }
 
@@ -3201,6 +3242,7 @@ Answer: False</pre>
     if (toolName === "results") {
       populateResClassSelect();
       populateApResClassSelect();
+      populateRrClassSelect();
     }
     if (toolName === "admissions") {
       loadAdmissions();
@@ -7893,7 +7935,7 @@ Answer: False</pre>
   });
 
   // ---------- Results: printable lists ----------
-  function resOpenPrintWindow(title, subtitle, theadHtml, bodyRowsHtml) {
+  function resOpenPrintWindow(title, subtitle, theadHtml, bodyRowsHtml, wide) {
     const win = window.open("", "_blank");
     if (!win) {
       showMsg("resultsLoadMsg", "Please allow pop-ups for this site to print.", "error");
@@ -7904,11 +7946,12 @@ Answer: False</pre>
       <head>
         <title>${title}</title>
         <style>
+          ${wide ? "@page { size: landscape; }" : ""}
           body { font-family: Georgia, serif; padding: 24px; color: #222; }
           h1 { text-align:center; margin-bottom:4px; }
           h2 { text-align:center; margin-top:0; font-weight:normal; color:#555; }
           table { width:100%; border-collapse: collapse; margin-top:20px; }
-          th, td { border:1px solid #333; padding:6px 8px; text-align:left; font-size:14px; }
+          th, td { border:1px solid #333; padding:${wide ? "4px 6px" : "6px 8px"}; text-align:left; font-size:${wide ? "11px" : "14px"}; }
           th { background:#f3e6c4; }
           .meta { margin-top:10px; font-size:14px; }
           .sign-row { display:flex; justify-content:space-between; margin-top:60px; font-size:14px; }
@@ -7983,6 +8026,173 @@ Answer: False</pre>
   el("printMasterListBtn").addEventListener("click", printMasterList);
   el("printCaFilledBtn").addEventListener("click", () => printCaList(false));
   el("printCaBlankBtn").addEventListener("click", () => printCaList(true));
+
+  // ---------- Results: class reports (admin only, all subjects) ----------
+  let rrSubjects = [];
+  let rrStudents = [];
+  let rrMatrix = {}; // studentId -> subjectId -> {ca1, ca2, exam, grade}
+  let rrContext = null; // { className, term, session }
+
+  async function populateRrClassSelect() {
+    let classes = [];
+    try {
+      classes = await fetchClasses();
+    } catch (err) {
+      return;
+    }
+    el("rrClassSelect").innerHTML = `<option value="">Select a class…</option>` +
+      classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+  }
+
+  el("rrGenerateBtn").addEventListener("click", async () => {
+    clearMsg("rrMsg");
+    el("rrPrintButtons").style.display = "none";
+
+    const classId = el("rrClassSelect").value;
+    const term = el("rrTermSelect").value;
+    const session = el("rrSessionInput").value.trim();
+    if (!classId || !term || !session) {
+      showMsg("rrMsg", "Please select a class, term, and session.", "error");
+      return;
+    }
+
+    showMsg("rrMsg", "Loading…", "success");
+
+    try {
+      const subjData = await cachedGetJson("/api/classes/" + classId + "/subjects");
+      rrSubjects = subjData.subjects || [];
+      if (!rrSubjects.length) {
+        showMsg("rrMsg", "This class has no subjects assigned yet.", "error");
+        return;
+      }
+
+      const stuRes = await fetchWithTimeout(API_BASE + "/api/students?classId=" + encodeURIComponent(classId), {
+        method: "GET", headers: authHeaders()
+      });
+      const stuData = await stuRes.json();
+      if (!stuRes.ok) {
+        showMsg("rrMsg", stuData.error || "Could not load students.", "error");
+        return;
+      }
+      rrStudents = stuData.students || [];
+      if (!rrStudents.length) {
+        showMsg("rrMsg", "No students in this class.", "error");
+        return;
+      }
+
+      rrMatrix = {};
+      rrStudents.forEach(s => { rrMatrix[s.id] = {}; });
+
+      const subjectResults = await Promise.all(rrSubjects.map(subj =>
+        fetchWithTimeout(
+          API_BASE + "/api/results?classId=" + encodeURIComponent(classId) + "&subjectId=" + encodeURIComponent(subj.id) +
+            "&term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+          { method: "GET", headers: authHeaders() }
+        ).then(r => r.json()).catch(() => ({ students: [] }))
+      ));
+
+      rrSubjects.forEach((subj, i) => {
+        const students = subjectResults[i].students || [];
+        students.forEach(s => {
+          if (!rrMatrix[s.student_id]) rrMatrix[s.student_id] = {};
+          rrMatrix[s.student_id][subj.id] = { ca1: s.ca1, ca2: s.ca2, exam: s.exam, grade: s.grade };
+        });
+      });
+
+      rrContext = {
+        className: el("rrClassSelect").selectedOptions[0]?.textContent || "",
+        term, session
+      };
+
+      showMsg("rrMsg", `Loaded ${rrStudents.length} student(s) across ${rrSubjects.length} subject(s).`, "success");
+      el("rrPrintButtons").style.display = "block";
+    } catch (err) {
+      showMsg("rrMsg", "Could not reach the portal server. Check your connection.", "error");
+    }
+  });
+
+  function rrGeneralSubtitle(title) {
+    return `Class: ${rrContext.className} &nbsp;|&nbsp; ${rrContext.term}, ${rrContext.session}`;
+  }
+
+  function printGeneralMasterList() {
+    if (!rrContext) return;
+    const thead = `<tr><th>S/N</th><th>Adm. No</th><th>Name</th>` +
+      rrSubjects.map(s => `<th>${s.name}</th>`).join("") +
+      `<th>Grand Total</th><th>Average</th><th>Position</th></tr>`;
+
+    const rowsData = rrStudents.map(stu => {
+      let grandTotal = 0, subjectCount = 0;
+      const cells = rrSubjects.map(subj => {
+        const r = rrMatrix[stu.id] && rrMatrix[stu.id][subj.id];
+        const hasAny = r && (r.ca1 != null || r.ca2 != null || r.exam != null);
+        if (!hasAny) return "";
+        const total = (r.ca1 || 0) + (r.ca2 || 0) + (r.exam || 0);
+        grandTotal += total;
+        subjectCount++;
+        return total;
+      });
+      const average = subjectCount ? (grandTotal / subjectCount) : null;
+      return { stu, cells, grandTotal: subjectCount ? grandTotal : null, average };
+    });
+
+    const ranked = rowsData
+      .map((r, i) => ({ ...r, idx: i }))
+      .filter(r => r.average != null)
+      .sort((a, b) => b.average - a.average);
+    const positionByIdx = {};
+    ranked.forEach((r, rank) => { positionByIdx[r.idx] = rank + 1; });
+
+    const rows = rowsData.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r.stu.admission_no || ""}</td>
+        <td>${r.stu.name}</td>
+        ${r.cells.map(c => `<td>${c}</td>`).join("")}
+        <td>${r.grandTotal ?? ""}</td>
+        <td>${r.average != null ? r.average.toFixed(1) : ""}</td>
+        <td>${positionByIdx[i] ?? ""}</td>
+      </tr>
+    `).join("");
+
+    resOpenPrintWindow("General Results Master List", rrGeneralSubtitle(), thead, rows, true);
+  }
+
+  function printGeneralCaList(blank) {
+    if (!rrContext) return;
+    const thead = `<tr><th>S/N</th><th>Adm. No</th><th>Name</th>` +
+      rrSubjects.map(s => `<th>${s.name} (30)</th>`).join("") +
+      `<th>Total</th></tr>`;
+
+    const rows = rrStudents.map((stu, i) => {
+      let total = 0, any = false;
+      const cells = rrSubjects.map(subj => {
+        if (blank) return "";
+        const r = rrMatrix[stu.id] && rrMatrix[stu.id][subj.id];
+        const hasAny = r && (r.ca1 != null || r.ca2 != null);
+        if (!hasAny) return "";
+        const sum = (r.ca1 || 0) + (r.ca2 || 0);
+        total += sum;
+        any = true;
+        return sum;
+      });
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${stu.admission_no || ""}</td>
+          <td>${stu.name}</td>
+          ${cells.map(c => `<td style="min-width:50px;">${c}</td>`).join("")}
+          <td>${any ? total : ""}</td>
+        </tr>
+      `;
+    }).join("");
+
+    resOpenPrintWindow(blank ? "General CA List (Blank — for offline use)" : "General CA List (Filled)", rrGeneralSubtitle(), thead, rows, true);
+  }
+
+  el("rrPrintMasterBtn").addEventListener("click", printGeneralMasterList);
+  el("rrPrintCaFilledBtn").addEventListener("click", () => printGeneralCaList(false));
+  el("rrPrintCaBlankBtn").addEventListener("click", () => printGeneralCaList(true));
 
   // ---------- Results: approve ----------
   async function populateApResClassSelect() {
