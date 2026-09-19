@@ -3386,8 +3386,6 @@ Answer: False</pre>
       loadClassesForManagement();
       populateClassDropdowns();
       loadSubjects();
-      populateTeacherSelects();
-      populateTaClassSelect();
     }
     // If the attendance panel is open, refresh its class dropdown against the new level.
     if (el("section-attendance").classList.contains("active")) {
@@ -4511,6 +4509,11 @@ Answer: False</pre>
     }
     el("taClassSelect").innerHTML = `<option value="">Select a class…</option>` +
       classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
+    // The class list was just rebuilt (and reset to blank), so any subject list
+    // loaded for a previously-selected class is now stale — clear it too.
+    if (el("taSubjectSelect")) {
+      el("taSubjectSelect").innerHTML = `<option value="">Select a class first…</option>`;
+    }
   }
 
   async function loadTaSubjectsForClass(classId) {
