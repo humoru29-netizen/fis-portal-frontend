@@ -1561,6 +1561,12 @@
             <button type="button" class="results-subtab" id="resModeOneBtn">One at a time (save &amp; continue)</button>
           </div>
 
+          <div id="resPrintButtons" style="display:none; margin-top:10px;">
+            <button type="button" id="printMasterListBtn" class="submit" style="width:auto; display:inline-block;">🖨️ Print Master List</button>
+            <button type="button" id="printCaFilledBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px;">🖨️ CA List (Filled)</button>
+            <button type="button" id="printCaBlankBtn" class="submit" style="width:auto; display:inline-block; margin-left:8px;">🖨️ CA List (Blank)</button>
+          </div>
+
           <div id="resultsEntryList"></div>
         </div>
 
@@ -7835,6 +7841,7 @@ Answer: False</pre>
       showMsg("resultsLoadMsg", "Please select a class, subject, term, and session.", "error");
       list.innerHTML = "";
       el("resEntryModeToggle").style.display = "none";
+      el("resPrintButtons").style.display = "none";
       return;
     }
 
@@ -7850,21 +7857,28 @@ Answer: False</pre>
       if (!res.ok) {
         list.innerHTML = "";
         el("resEntryModeToggle").style.display = "none";
+        el("resPrintButtons").style.display = "none";
         showMsg("resultsLoadMsg", data.error || "Could not load results.", "error");
         return;
       }
 
       resLoadedStudents = data.students || [];
-      resLoadedContext = { classId, subjectId, term, session };
+      resLoadedContext = {
+        classId, subjectId, term, session,
+        className: el("resClassSelect").selectedOptions[0]?.textContent || "",
+        subjectName: el("resSubjectSelect").selectedOptions[0]?.textContent || ""
+      };
       resOneIndex = 0;
 
       if (!resLoadedStudents.length) {
         list.innerHTML = `<div class="empty-state">No students in this class.</div>`;
         el("resEntryModeToggle").style.display = "none";
+        el("resPrintButtons").style.display = "none";
         return;
       }
 
       el("resEntryModeToggle").style.display = "flex";
+      el("resPrintButtons").style.display = "block";
       if (resEntryMode === "one") {
         renderResultsOneMode();
       } else {
@@ -7873,9 +7887,102 @@ Answer: False</pre>
     } catch (err) {
       list.innerHTML = "";
       el("resEntryModeToggle").style.display = "none";
+      el("resPrintButtons").style.display = "none";
       showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
     }
   });
+
+  // ---------- Results: printable lists ----------
+  function resOpenPrintWindow(title, subtitle, theadHtml, bodyRowsHtml) {
+    const win = window.open("", "_blank");
+    if (!win) {
+      showMsg("resultsLoadMsg", "Please allow pop-ups for this site to print.", "error");
+      return;
+    }
+    win.document.write(`
+      <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body { font-family: Georgia, serif; padding: 24px; color: #222; }
+          h1 { text-align:center; margin-bottom:4px; }
+          h2 { text-align:center; margin-top:0; font-weight:normal; color:#555; }
+          table { width:100%; border-collapse: collapse; margin-top:20px; }
+          th, td { border:1px solid #333; padding:6px 8px; text-align:left; font-size:14px; }
+          th { background:#f3e6c4; }
+          .meta { margin-top:10px; font-size:14px; }
+          .sign-row { display:flex; justify-content:space-between; margin-top:60px; font-size:14px; }
+          .print-btn { margin-top:24px; padding:10px 20px; font-size:14px; }
+          @media print { .print-btn { display:none; } }
+        </style>
+      </head>
+      <body>
+        <h1>Faith International School, Itobe</h1>
+        <h2>${title}</h2>
+        <div class="meta">${subtitle}</div>
+        <table>
+          <thead>${theadHtml}</thead>
+          <tbody>${bodyRowsHtml}</tbody>
+        </table>
+        <div class="sign-row">
+          <div>Subject Teacher: ______________________</div>
+          <div>Date: ______________</div>
+        </div>
+        <button class="print-btn" onclick="window.print()">Print</button>
+      </body>
+      </html>
+    `);
+    win.document.close();
+  }
+
+  function resSubtitleHtml() {
+    const { className, subjectName, term, session } = resLoadedContext;
+    return `Class: ${className} &nbsp;|&nbsp; Subject: ${subjectName} &nbsp;|&nbsp; ${term}, ${session}`;
+  }
+
+  function printMasterList() {
+    if (!resLoadedStudents.length || !resLoadedContext) return;
+    const thead = `<tr><th>S/N</th><th>Adm. No</th><th>Name</th><th>CA1 (15)</th><th>CA2 (15)</th><th>Exam (70)</th><th>Total (100)</th><th>Grade</th></tr>`;
+    const rows = resLoadedStudents.map((s, i) => {
+      const hasAny = s.ca1 != null || s.ca2 != null || s.exam != null;
+      const total = (s.ca1 || 0) + (s.ca2 || 0) + (s.exam || 0);
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${s.admission_no || ""}</td>
+        <td>${s.student_name}</td>
+        <td>${s.ca1 ?? ""}</td>
+        <td>${s.ca2 ?? ""}</td>
+        <td>${s.exam ?? ""}</td>
+        <td>${hasAny ? total : ""}</td>
+        <td>${s.grade || ""}</td>
+      </tr>`;
+    }).join("");
+    resOpenPrintWindow("Results Master List", resSubtitleHtml(), thead, rows);
+  }
+
+  function printCaList(blank) {
+    if (!resLoadedStudents.length || !resLoadedContext) return;
+    const thead = `<tr><th>S/N</th><th>Adm. No</th><th>Name</th><th>CA1 (15)</th><th>CA2 (15)</th><th>Total (30)</th></tr>`;
+    const rows = resLoadedStudents.map((s, i) => {
+      const ca1 = blank ? "" : (s.ca1 ?? "");
+      const ca2 = blank ? "" : (s.ca2 ?? "");
+      const hasAny = !blank && (s.ca1 != null || s.ca2 != null);
+      const total = hasAny ? (s.ca1 || 0) + (s.ca2 || 0) : "";
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${s.admission_no || ""}</td>
+        <td>${s.student_name}</td>
+        <td style="min-width:60px;">${ca1}</td>
+        <td style="min-width:60px;">${ca2}</td>
+        <td>${total}</td>
+      </tr>`;
+    }).join("");
+    resOpenPrintWindow(blank ? "CA List (Blank — for offline use)" : "CA List (Filled)", resSubtitleHtml(), thead, rows);
+  }
+
+  el("printMasterListBtn").addEventListener("click", printMasterList);
+  el("printCaFilledBtn").addEventListener("click", () => printCaList(false));
+  el("printCaBlankBtn").addEventListener("click", () => printCaList(true));
 
   // ---------- Results: approve ----------
   async function populateApResClassSelect() {
