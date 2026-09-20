@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Faith International School, Itobe — Portal</title>
+
+<!-- PWA: install to home screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6E1423">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FIS Itobe">
+
 <style>
   :root {
     --maroon: #6E1423;
@@ -106,18 +115,18 @@
   }
 
   header.brand .crest {
-    width: 46px;
-    height: 46px;
+    width: 64px;
+    height: 64px;
     margin: 0 auto 10px;
-    border-radius: 50%;
-    background: var(--gold);
-    color: var(--maroon-dark);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    font-size: 18px;
+  }
+
+  header.brand .crest img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   header.brand h1 {
@@ -1145,7 +1154,7 @@
     <button type="button" class="nav-toggle" id="navToggle" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <div class="crest">FIS</div>
+    <div class="crest"><img src="icons/crest.png" alt="Faith International School, Itobe crest"></div>
     <h1>Faith International School, Itobe</h1>
     <p class="motto">"In God We Trust"</p>
     <nav class="nav-menu" id="navMenu">
@@ -1336,7 +1345,7 @@
 <div id="admissionApplyView" style="width:100%; display:none; flex-direction:column; align-items:center;">
 
   <header class="brand">
-    <div class="crest">FIS</div>
+    <div class="crest"><img src="icons/crest.png" alt="Faith International School, Itobe crest"></div>
     <h1>Faith International School, Itobe</h1>
     <p>Apply for Admission</p>
   </header>
