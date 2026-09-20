@@ -3539,7 +3539,7 @@ Answer: False</pre>
       const data = await res.json();
 
       if (!res.ok) {
-        showMsg("staffLoginMsg", (data.error || "Sign in failed.") + (data.detail ? " [DEBUG: " + data.detail + "]" : ""), "error");
+        showMsg("staffLoginMsg", data.error || "Sign in failed.", "error");
         return;
       }
 
