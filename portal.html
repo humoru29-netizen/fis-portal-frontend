@@ -3680,8 +3680,8 @@ Answer: False</pre>
       populateCbtResClassSelect();
     }
     if (toolName === "announcements") {
-      el("announcementsPostBox").style.display = isAdminRole(currentAdminRole) ? "block" : "none";
-      if (isAdminRole(currentAdminRole)) populateAnnClassSelect();
+      el("announcementsPostBox").style.display = currentAdminRole === "general_admin" ? "block" : "none";
+      if (currentAdminRole === "general_admin") populateAnnClassSelect();
       loadAnnouncements();
     }
     if (toolName === "site-content") {
@@ -7639,11 +7639,11 @@ Answer: False</pre>
             ${a.created_by_name ? " · Posted by " + a.created_by_name : ""}
           </p>
           <p style="margin-top:6px; white-space:pre-wrap;">${a.body}</p>
-          ${isAdmin ? `<a class="delete-link ann-delete-link" data-id="${a.id}" style="margin-top:8px; display:inline-block;">Delete</a>` : ""}
+          ${currentAdminRole === "general_admin" ? `<a class="delete-link ann-delete-link" data-id="${a.id}" style="margin-top:8px; display:inline-block;">Delete</a>` : ""}
         </div>
       `).join("");
 
-      if (isAdmin) {
+      if (currentAdminRole === "general_admin") {
         list.querySelectorAll(".ann-delete-link").forEach(link => {
           link.addEventListener("click", async () => {
             if (!confirm("Delete this announcement?")) return;
