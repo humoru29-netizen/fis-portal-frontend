@@ -3229,7 +3229,7 @@ Answer: False</pre>
       }
       e.target.reset();
     } catch (err) {
-      showMsg("admissionApplyMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("admissionApplyMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -3546,7 +3546,7 @@ Answer: False</pre>
       saveSession(data.token, "staff", data.user);
       showDashboard("staff", data.user);
     } catch (err) {
-      showMsg("staffLoginMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("staffLoginMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -3581,7 +3581,7 @@ Answer: False</pre>
       showMsg("staffSignupMsg", data.message || "Request submitted.", "success");
       e.target.reset();
     } catch (err) {
-      showMsg("staffSignupMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("staffSignupMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -3615,7 +3615,7 @@ Answer: False</pre>
       saveSession(data.token, "student", data.student);
       showDashboard("student", data.student);
     } catch (err) {
-      showMsg("studentLoginMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentLoginMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -3795,7 +3795,7 @@ Answer: False</pre>
 
     } catch (err) {
       list.innerHTML = "";
-      showMsg("approvalsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("approvalsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -3830,7 +3830,7 @@ Answer: False</pre>
       showMsg("approvalsMsg", data.message || "Done.", "success");
       loadApprovals();
     } catch (err) {
-      showMsg("approvalsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("approvalsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
       buttons.forEach(b => b.disabled = false);
     }
   }
@@ -3907,7 +3907,7 @@ Answer: False</pre>
       if (el("assignClassInput")) populateAssignClassInput();
       if (el("viewAssignClassSelect")) populateViewAssignClassSelect();
     } catch (err) {
-      showMsg("addClassMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("addClassMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -3940,7 +3940,7 @@ Answer: False</pre>
       loadClassesForManagement();
       populateClassDropdowns();
     } catch (err) {
-      showMsg("addClassMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("addClassMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4031,7 +4031,7 @@ Answer: False</pre>
         loadStudentsForClass(classSelect.value);
       }
     } catch (err) {
-      showMsg("addStudentMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("addStudentMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4105,7 +4105,7 @@ Answer: False</pre>
       invalidateCachePrefix("/api/students?classId=" + classId);
       loadStudentsForClass(classId);
     } catch (err) {
-      showMsg("studentsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4263,7 +4263,7 @@ Answer: False</pre>
         el("pinResultBox").style.display = "block";
       }
     } catch (err) {
-      showMsg("pinGenMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("pinGenMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4333,7 +4333,7 @@ Answer: False</pre>
       invalidateCachePrefix("/api/subjects");
       loadSubjects();
     } catch (err) {
-      showMsg("addSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("addSubjectMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4364,7 +4364,7 @@ Answer: False</pre>
       e.target.reset();
       loadSubjects();
     } catch (err) {
-      showMsg("addSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("addSubjectMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4426,7 +4426,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("assignSubjectMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4444,7 +4444,7 @@ Answer: False</pre>
       loadClassSubjects(classId);
       invalidateCachePrefix("/api/classes/" + classId + "/subjects");
     } catch (err) {
-      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("assignSubjectMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4482,7 +4482,7 @@ Answer: False</pre>
       invalidateCachePrefix("/api/classes/" + classId + "/subjects");
       loadClassSubjects(classId);
     } catch (err) {
-      showMsg("assignSubjectMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("assignSubjectMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4586,7 +4586,7 @@ Answer: False</pre>
         loadTeacherAssignments(teacherId);
       }
     } catch (err) {
-      showMsg("taAssignMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("taAssignMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -4635,7 +4635,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("taViewMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("taViewMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4653,7 +4653,7 @@ Answer: False</pre>
       }
       loadTeacherAssignments(teacherId);
     } catch (err) {
-      showMsg("taViewMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("taViewMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -4790,7 +4790,7 @@ Answer: False</pre>
       }
       renderTimetableGrid(data.slots || []);
     } catch (err) {
-      showMsg("ttLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("ttLoadMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -5124,7 +5124,7 @@ Answer: False</pre>
       renderAttendanceList(students);
       el("attendanceMarkArea").style.display = "block";
     } catch (err) {
-      showMsg("attendanceLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("attendanceLoadMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5178,7 +5178,7 @@ Answer: False</pre>
 
       showMsg("attendanceSaveMsg", result.queued ? "Saved offline — will sync automatically." : (result.data.message || "Attendance saved."), "success");
     } catch (err) {
-      showMsg("attendanceSaveMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("attendanceSaveMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5267,7 +5267,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("attHistMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("attHistMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5310,7 +5310,7 @@ Answer: False</pre>
         </div>
       `).join("");
     } catch (err) {
-      box.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+      box.innerHTML = `<p class="msg error">${(err && err.message) || "Could not reach the portal server. Check your connection."}</p>`;
     }
   }
 
@@ -5399,7 +5399,7 @@ Answer: False</pre>
       el("feeRecAmount").value = "";
       el("feeRecNotes").value = "";
     } catch (err) {
-      showMsg("feeRecordMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("feeRecordMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5436,7 +5436,7 @@ Answer: False</pre>
 
       showMsg("feeSetMsg", data.message || "Fee amount saved.", "success");
     } catch (err) {
-      showMsg("feeSetMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("feeSetMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5474,7 +5474,7 @@ Answer: False</pre>
         </div>
       `).join("");
     } catch (err) {
-      box.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+      box.innerHTML = `<p class="msg error">${(err && err.message) || "Could not reach the portal server. Check your connection."}</p>`;
     }
   });
 
@@ -5529,7 +5529,7 @@ Answer: False</pre>
       `;
     } catch (err) {
       result.innerHTML = "";
-      showMsg("feeStuMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("feeStuMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5577,7 +5577,7 @@ Answer: False</pre>
       `;
     } catch (err) {
       result.innerHTML = "";
-      showMsg("feeClassMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("feeClassMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -5620,7 +5620,7 @@ Answer: False</pre>
       `;
     } catch (err) {
       result.innerHTML = "";
-      showMsg("feeTotalsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("feeTotalsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -6144,7 +6144,7 @@ Answer: False</pre>
           currentReportCard.teacherRemark = el("rcTeacherRemarkInput").value.trim();
           showMsg("rcTeacherRemarkMsg", "Saved.", "success");
         } catch (err) {
-          showMsg("rcTeacherRemarkMsg", "Could not reach the portal server. Check your connection.", "error");
+          showMsg("rcTeacherRemarkMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         } finally {
           remarkBtn.disabled = false;
         }
@@ -6168,7 +6168,7 @@ Answer: False</pre>
             currentReportCard.principalRemark = el("rcPrincipalRemarkInput").value.trim();
             showMsg("rcPrincipalRemarkMsg", "Saved.", "success");
           } catch (err) {
-            showMsg("rcPrincipalRemarkMsg", "Could not reach the portal server. Check your connection.", "error");
+            showMsg("rcPrincipalRemarkMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
           } finally {
             remarkBtn.disabled = false;
           }
@@ -6179,7 +6179,7 @@ Answer: False</pre>
       el("rcDownloadLink").addEventListener("click", (e) => downloadReportCardPdf(currentReportCard, e.target));
     } catch (err) {
       result.innerHTML = "";
-      showMsg("rcMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("rcMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -6301,7 +6301,7 @@ Answer: False</pre>
       wireCbtTestListHandlers();
     } catch (err) {
       list.innerHTML = "";
-      showMsg("cbtTestsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtTestsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -6354,7 +6354,7 @@ Answer: False</pre>
           }
           loadCbtTests();
         } catch (err) {
-          cbtItemMsg(testId, "Could not reach the portal server. Check your connection.", "error");
+          cbtItemMsg(testId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
           btn.disabled = false;
         }
       });
@@ -6373,7 +6373,7 @@ Answer: False</pre>
           }
           loadCbtTests();
         } catch (err) {
-          cbtItemMsg(testId, "Could not reach the portal server. Check your connection.", "error");
+          cbtItemMsg(testId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         }
       });
     });
@@ -6417,7 +6417,7 @@ Answer: False</pre>
       el("cbtNewDuration").value = "";
       loadCbtTests();
     } catch (err) {
-      showMsg("cbtCreateMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtCreateMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -6481,12 +6481,12 @@ Answer: False</pre>
             }
             loadCbtQuestions();
           } catch (err) {
-            alert("Could not reach the portal server. Check your connection.");
+            alert((err && err.message) || "Could not reach the portal server. Check your connection.");
           }
         });
       });
     } catch (err) {
-      list.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+      list.innerHTML = `<p class="msg error">${(err && err.message) || "Could not reach the portal server. Check your connection."}</p>`;
     }
   }
 
@@ -6541,7 +6541,7 @@ Answer: False</pre>
       el("cbtOptD").value = "";
       loadCbtQuestions();
     } catch (err) {
-      showMsg("cbtAddQuestionMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtAddQuestionMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -6764,7 +6764,7 @@ Answer: False</pre>
         : `<div class="empty-state">Nothing in the bank yet for this class/subject/term. Add some in the Question Bank tab.</div>`;
     } catch (err) {
       box.innerHTML = "";
-      showMsg("cbtFromBankMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtFromBankMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -6801,7 +6801,7 @@ Answer: False</pre>
       showMsg("cbtAddFromBankResultMsg", data.message || "Added.", "success");
       loadCbtQuestions();
     } catch (err) {
-      showMsg("cbtAddFromBankResultMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtAddFromBankResultMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -6900,13 +6900,13 @@ Answer: False</pre>
             }
             loadCbtBankList();
           } catch (err) {
-            alert("Could not reach the portal server. Check your connection.");
+            alert((err && err.message) || "Could not reach the portal server. Check your connection.");
           }
         });
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("cbtBankMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtBankMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -6967,7 +6967,7 @@ Answer: False</pre>
       el("cbtBankOptD").value = "";
       loadCbtBankList();
     } catch (err) {
-      showMsg("cbtBankAddMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtBankAddMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -7231,7 +7231,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("cbtResTestsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("cbtResTestsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -7259,7 +7259,7 @@ Answer: False</pre>
           `).join("")
         : `<div class="empty-state">No submissions yet.</div>`;
     } catch (err) {
-      list.innerHTML = `<p class="msg error">Could not reach the portal server. Check your connection.</p>`;
+      list.innerHTML = `<p class="msg error">${(err && err.message) || "Could not reach the portal server. Check your connection."}</p>`;
     }
   }
 
@@ -7319,7 +7319,7 @@ Answer: False</pre>
       el("stuRcDownloadLink").addEventListener("click", (e) => downloadReportCardPdf(data, e.target));
     } catch (err) {
       result.innerHTML = "";
-      showMsg("stuRcMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("stuRcMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -7352,7 +7352,7 @@ Answer: False</pre>
         : `<div class="empty-state">No announcements yet.</div>`;
     } catch (err) {
       list.innerHTML = "";
-      showMsg("studentAnnMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentAnnMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -7395,7 +7395,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("studentCbtMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentCbtMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -7459,7 +7459,7 @@ Answer: False</pre>
 
       startCbtTimer(data.test.durationMinutes);
     } catch (err) {
-      showMsg("studentCbtMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("studentCbtMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -7519,7 +7519,7 @@ Answer: False</pre>
       el("cbtScoreHeading").textContent = "Test Submitted";
       el("cbtScoreDetail").textContent = "Your score: " + data.score + " out of " + data.totalPoints;
     } catch (err) {
-      showMsg("cbtTakeMsg", "Could not reach the portal server. Your answers were not submitted — try again.", "error");
+      showMsg("cbtTakeMsg", (err && err.message ? err.message + " Your answers were not submitted — try again." : "Could not reach the portal server. Your answers were not submitted — try again."), "error");
       btn.disabled = false;
     }
   }
@@ -7600,7 +7600,7 @@ Answer: False</pre>
       el("annClassPickerBox").style.display = "none";
       loadAnnouncements();
     } catch (err) {
-      showMsg("annPostMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("annPostMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -7666,14 +7666,14 @@ Answer: False</pre>
               }
               loadAnnouncements();
             } catch (err) {
-              alert("Could not reach the portal server. Check your connection.");
+              alert((err && err.message) || "Could not reach the portal server. Check your connection.");
             }
           });
         });
       }
     } catch (err) {
       list.innerHTML = "";
-      showMsg("annListMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("annListMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -7724,7 +7724,7 @@ Answer: False</pre>
       }
       showMsg("scAboutMsg", "About Us updated.", "success");
     } catch (err) {
-      showMsg("scAboutMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("scAboutMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -7801,13 +7801,13 @@ Answer: False</pre>
             }
             loadLeadershipAdmin();
           } catch (err) {
-            alert("Could not reach the portal server. Check your connection.");
+            alert((err && err.message) || "Could not reach the portal server. Check your connection.");
           }
         });
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("scLeaderListMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("scLeaderListMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -7845,7 +7845,7 @@ Answer: False</pre>
       resetLeaderForm();
       loadLeadershipAdmin();
     } catch (err) {
-      showMsg("scLeaderFormMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("scLeaderFormMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -7965,7 +7965,7 @@ Answer: False</pre>
       e.target.reset();
       el("assignSubjectInput").innerHTML = `<option value="">Select a class first…</option>`;
     } catch (err) {
-      showMsg("createAssignmentMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("createAssignmentMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -8036,7 +8036,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("loadAssignmentsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("loadAssignmentsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -8058,7 +8058,7 @@ Answer: False</pre>
       showMsg("loadAssignmentsMsg", data.message || "Assignment deleted.", "success");
       loadAssignmentsList();
     } catch (err) {
-      showMsg("loadAssignmentsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("loadAssignmentsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -8108,7 +8108,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("submissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("submissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -8139,7 +8139,7 @@ Answer: False</pre>
       badge.textContent = status.replace("_", " ");
       showMsg("submissionsMsg", "Saved.", "success");
     } catch (err) {
-      showMsg("submissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("submissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     } finally {
       btn.disabled = false;
     }
@@ -8472,7 +8472,7 @@ Answer: False</pre>
         resOneIndex++;
         renderResultsOneMode();
       } catch (err) {
-        showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+        showMsg("resultsLoadMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         btn.disabled = false;
       }
     });
@@ -8538,7 +8538,7 @@ Answer: False</pre>
       list.innerHTML = "";
       el("resEntryModeToggle").style.display = "none";
       el("resPrintButtons").style.display = "none";
-      showMsg("resultsLoadMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("resultsLoadMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -8715,7 +8715,7 @@ Answer: False</pre>
       showMsg("rrMsg", `Loaded ${rrStudents.length} student(s) across ${rrSubjects.length} subject(s).`, "success");
       el("rrPrintButtons").style.display = "block";
     } catch (err) {
-      showMsg("rrMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("rrMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -8870,7 +8870,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("pendingResultsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -8895,7 +8895,7 @@ Answer: False</pre>
       showMsg("pendingResultsMsg", data.message || "Done.", "success");
       loadPendingResults();
     } catch (err) {
-      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("pendingResultsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
       row.querySelectorAll("button").forEach(b => b.disabled = false);
     }
   }
@@ -8931,7 +8931,7 @@ Answer: False</pre>
       showMsg("pendingResultsMsg", data.message || "Approved.", "success");
       loadPendingResults();
     } catch (err) {
-      showMsg("pendingResultsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("pendingResultsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
 
@@ -9091,7 +9091,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("admissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -9120,7 +9120,7 @@ Answer: False</pre>
       showMsg("admissionsMsg", `Approved. Admission No: ${data.admissionNo}`, "success");
       loadAdmissions();
     } catch (err) {
-      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("admissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -9144,7 +9144,7 @@ Answer: False</pre>
       showMsg("admissionsMsg", data.message || "Application rejected.", "success");
       loadAdmissions();
     } catch (err) {
-      showMsg("admissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("admissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -9181,7 +9181,7 @@ Answer: False</pre>
       });
     } catch (err) {
       list.innerHTML = "";
-      showMsg("decidedAdmissionsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("decidedAdmissionsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -9249,7 +9249,7 @@ Answer: False</pre>
       wireManageAccountsHandlers();
     } catch (err) {
       list.innerHTML = "";
-      showMsg("manageAccountsMsg", "Could not reach the portal server. Check your connection.", "error");
+      showMsg("manageAccountsMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   }
 
@@ -9281,7 +9281,7 @@ Answer: False</pre>
           }
           maItemMsg(staffId, data.message || "Updated.", "success");
         } catch (err) {
-          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+          maItemMsg(staffId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         } finally {
           btn.disabled = false;
         }
@@ -9308,7 +9308,7 @@ Answer: False</pre>
           }
           loadManageAccounts();
         } catch (err) {
-          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+          maItemMsg(staffId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
           btn.disabled = false;
         }
       });
@@ -9333,7 +9333,7 @@ Answer: False</pre>
           }
           maItemMsg(staffId, "New temporary password: " + data.tempPassword + " — share this with the staff member now.", "success");
         } catch (err) {
-          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+          maItemMsg(staffId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         } finally {
           btn.disabled = false;
         }
@@ -9357,7 +9357,7 @@ Answer: False</pre>
           }
           loadManageAccounts();
         } catch (err) {
-          maItemMsg(staffId, "Could not reach the portal server. Check your connection.", "error");
+          maItemMsg(staffId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         }
       });
     });
