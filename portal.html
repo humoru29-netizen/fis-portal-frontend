@@ -4079,7 +4079,8 @@ Answer: False</pre>
         students.map(s => `<option value="${s.id}">${s.name} (${s.admission_no})</option>`).join("");
     } catch (err) {
       list.innerHTML = "";
-      showMsg("studentsMsg", "Could not reach the portal server, and nothing is cached for this class yet on this device.", "error");
+      const reason = (err && err.message) || "Could not reach the portal server, and nothing is cached for this class yet on this device.";
+      showMsg("studentsMsg", reason, "error");
     }
   }
 
