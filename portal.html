@@ -968,6 +968,47 @@
     border-radius: 8px;
     padding: 12px 14px;
     margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .roster-item-photo-wrap {
+    flex-shrink: 0;
+    width: 56px;
+    text-align: center;
+  }
+
+  .roster-item-photo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--border);
+    display: block;
+    border: 1px solid var(--border);
+  }
+
+  .photo-upload-label {
+    display: block;
+    font-size: 10.5px;
+    color: var(--maroon);
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .photo-remove-link {
+    display: block;
+    font-size: 10.5px;
+    color: var(--error-text);
+    cursor: pointer;
+    margin-top: 2px;
+  }
+
+  .roster-item-info {
+    flex: 1;
+    min-width: 0;
   }
 
   .roster-item .roster-item-name {
@@ -1165,6 +1206,20 @@
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBu_SNTOj-nprZtPgxQoZNVRS-w8cV7-FU",
+    authDomain: "myschoolportal-53158.firebaseapp.com",
+    projectId: "myschoolportal-53158",
+    storageBucket: "myschoolportal-53158.firebasestorage.app",
+    messagingSenderId: "728505506353",
+    appId: "1:728505506353:web:6cb995bb4e745769015310"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const photoStorage = firebase.storage();
+</script>
 </head>
 <body>
 
@@ -4095,11 +4150,32 @@ Answer: False</pre>
 
       list.innerHTML = students.map(s => `
         <div class="roster-item">
-          <p class="roster-item-name">${s.name}</p>
-          <p class="roster-item-meta">${s.admission_no}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}</p>
-          <a class="delete-link" data-id="${s.id}" data-name="${s.name}">Remove student</a>
+          <div class="roster-item-photo-wrap">
+            <img class="roster-item-photo" src="${s.photo_key || ""}" alt="">
+            <label class="photo-upload-label">
+              ${s.photo_key ? "Change photo" : "Add photo"}
+              <input type="file" accept="image/jpeg,image/png,image/webp" class="photo-input" data-id="${s.id}" hidden>
+            </label>
+            ${s.photo_key ? `<a class="photo-remove-link" data-id="${s.id}" data-name="${s.name}">Remove photo</a>` : ""}
+          </div>
+          <div class="roster-item-info">
+            <p class="roster-item-name">${s.name}</p>
+            <p class="roster-item-meta">${s.admission_no}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}</p>
+            <a class="delete-link" data-id="${s.id}" data-name="${s.name}">Remove student</a>
+          </div>
         </div>
       `).join("");
+
+      list.querySelectorAll(".photo-input").forEach(input => {
+        input.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (file) uploadStudentPhoto(input.dataset.id, file, classId);
+        });
+      });
+
+      list.querySelectorAll(".photo-remove-link").forEach(link => {
+        link.addEventListener("click", () => removeStudentPhoto(link.dataset.id, link.dataset.name, classId));
+      });
 
       list.querySelectorAll(".delete-link").forEach(link => {
         link.addEventListener("click", () => deleteStudent(link.dataset.id, link.dataset.name, classId));
@@ -4111,6 +4187,55 @@ Answer: False</pre>
       list.innerHTML = "";
       const reason = (err && err.message) || "Could not reach the portal server, and nothing is cached for this class yet on this device.";
       showMsg("studentsMsg", reason, "error");
+    }
+  }
+
+  async function uploadStudentPhoto(studentId, file, classId) {
+    clearMsg("studentsMsg");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      showMsg("studentsMsg", "Photo must be a JPEG, PNG, or WEBP image.", "error");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showMsg("studentsMsg", "Photo must be smaller than 2MB.", "error");
+      return;
+    }
+    try {
+      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+      const storageRef = photoStorage.ref().child("student-photos/" + studentId + "." + ext);
+      await storageRef.put(file, { contentType: file.type });
+      const photoUrl = await storageRef.getDownloadURL();
+
+      const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId + "/photo", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ photoUrl })
+      }, 20000);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save photo.");
+      loadStudentsForClass(classId);
+    } catch (err) {
+      showMsg("studentsMsg", (err && err.message) || "Could not upload photo. Check your connection.", "error");
+    }
+  }
+
+  async function removeStudentPhoto(studentId, name, classId) {
+    if (!confirm(`Remove ${name}'s photo?`)) return;
+    clearMsg("studentsMsg");
+    try {
+      const student = currentClassStudents.find(s => s.id === studentId);
+      if (student && student.photo_key) {
+        try { await photoStorage.refFromURL(student.photo_key).delete(); } catch (e) { /* best-effort */ }
+      }
+      const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId + "/photo", {
+        method: "DELETE",
+        headers: authHeaders()
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not remove photo.");
+      loadStudentsForClass(classId);
+    } catch (err) {
+      showMsg("studentsMsg", (err && err.message) || "Could not remove photo. Check your connection.", "error");
     }
   }
 
@@ -8990,6 +9115,7 @@ Answer: False</pre>
         </p>
         ${decisionLine}
         ${printLine}
+        ${!showDecision ? `<a class="refresh-link admission-view-link" data-app-id="${a.id}" style="margin-top:6px; display:inline-block;">View full application</a>` : ""}
         ${!showDecision ? `
           <div class="row2" style="margin-top:10px;">
             <select class="admission-class-select" data-app-id="${a.id}">
@@ -9001,6 +9127,60 @@ Answer: False</pre>
         ` : ""}
       </div>
     `;
+  }
+
+  function previewAdmissionApplication(a) {
+    const submitted = a.submitted_at
+      ? new Date(a.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
+
+    const previewHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Application — ${a.student_name}</title>
+        <style>
+          body { font-family: Georgia, serif; color: #222; max-width: 700px; margin: 40px auto; line-height: 1.6; }
+          .letterhead { text-align: center; border-bottom: 3px double #7a1f2b; padding-bottom: 16px; margin-bottom: 28px; }
+          .letterhead h1 { margin: 8px 0 0; font-size: 1.4em; }
+          .letterhead p { margin: 4px 0 0; color: #555; }
+          .field { margin: 10px 0; }
+          .field strong { display: inline-block; width: 180px; }
+          .print-btn { display: inline-block; margin-bottom: 20px; padding: 8px 16px; background: #7a1f2b; color: #fff;
+                       border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+          @media print {
+            body { margin: 0; }
+            .print-btn { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <button class="print-btn" onclick="window.print()">Print</button>
+        <div class="letterhead">
+          <h1>Faith International School, Itobe</h1>
+          <p>Admission Application — Pending Review</p>
+        </div>
+
+        <div class="field"><strong>Student's Name:</strong> ${a.student_name}</div>
+        <div class="field"><strong>Date of Birth:</strong> ${a.dob || "—"}</div>
+        <div class="field"><strong>Gender:</strong> ${a.gender || "—"}</div>
+        <div class="field"><strong>Level Applied For:</strong> ${a.level_applied || "—"}</div>
+        <div class="field"><strong>Class Applied For:</strong> ${a.class_applied || "—"}</div>
+        <div class="field"><strong>Prior School:</strong> ${a.prior_school || "—"}</div>
+        <div class="field"><strong>Health Notes:</strong> ${a.health_notes || "—"}</div>
+        <div class="field"><strong>Guardian's Name:</strong> ${a.guardian_name || "—"}</div>
+        <div class="field"><strong>Guardian's Phone:</strong> ${a.guardian_phone || "—"}</div>
+        <div class="field"><strong>Guardian's Email:</strong> ${a.guardian_email || "—"}</div>
+        <div class="field"><strong>Address:</strong> ${a.address || "—"}</div>
+        <div class="field"><strong>Date Submitted:</strong> ${submitted}</div>
+      </body>
+      </html>
+    `;
+
+    const previewWindow = window.open("", "_blank");
+    previewWindow.document.write(previewHtml);
+    previewWindow.document.close();
   }
 
   function printAdmissionLetter(a) {
@@ -9112,6 +9292,13 @@ Answer: False</pre>
 
       list.innerHTML = applications.map(a => admissionCardHtml(a, false)).join("");
       await populateAdmissionClassSelects();
+
+      const appsById = {};
+      applications.forEach(a => { appsById[a.id] = a; });
+
+      list.querySelectorAll(".admission-view-link").forEach(link => {
+        link.addEventListener("click", () => previewAdmissionApplication(appsById[link.dataset.appId]));
+      });
 
       list.querySelectorAll(".admission-approve-btn").forEach(btn => {
         btn.addEventListener("click", () => approveAdmission(btn.dataset.appId));
