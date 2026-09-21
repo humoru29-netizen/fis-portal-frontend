@@ -1180,6 +1180,7 @@
     <p class="motto">"In God We Trust"</p>
     <nav class="nav-menu" id="navMenu">
       <a id="navHome">Home</a>
+      <a id="navLogin">Login</a>
       <a id="navCbt">CBT Exam</a>
       <a id="navAbout">About Us</a>
       <a id="navLeadership">Leadership</a>
@@ -3144,6 +3145,12 @@ Answer: False</pre>
   el("navHome").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
     el("brandHeader").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  el("navLogin").addEventListener("click", () => {
+    el("navMenu").classList.remove("open");
+    el("loginView").style.display = "flex";
+    el("admissionApplyView").style.display = "none";
+    el("loginTabs").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   el("navAbout").addEventListener("click", () => {
     el("navMenu").classList.remove("open");
