@@ -1206,19 +1206,9 @@
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBu_SNTOj-nprZtPgxQoZNVRS-w8cV7-FU",
-    authDomain: "myschoolportal-53158.firebaseapp.com",
-    projectId: "myschoolportal-53158",
-    storageBucket: "myschoolportal-53158.firebasestorage.app",
-    messagingSenderId: "728505506353",
-    appId: "1:728505506353:web:6cb995bb4e745769015310"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const photoStorage = firebase.storage();
+  const CLOUDINARY_CLOUD_NAME = "i1nd7jb7";
+  const CLOUDINARY_UPLOAD_PRESET = "student_photos";
 </script>
 </head>
 <body>
@@ -4201,10 +4191,20 @@ Answer: False</pre>
       return;
     }
     try {
-      const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-      const storageRef = photoStorage.ref().child("student-photos/" + studentId + "." + ext);
-      await storageRef.put(file, { contentType: file.type });
-      const photoUrl = await storageRef.getDownloadURL();
+      const cloudinaryForm = new FormData();
+      cloudinaryForm.append("file", file);
+      cloudinaryForm.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      cloudinaryForm.append("folder", "student-photos");
+      cloudinaryForm.append("public_id", studentId);
+
+      const uploadRes = await fetchWithTimeout(
+        "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload",
+        { method: "POST", body: cloudinaryForm },
+        20000
+      );
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error((uploadData.error && uploadData.error.message) || "Photo upload failed.");
+      const photoUrl = uploadData.secure_url;
 
       const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId + "/photo", {
         method: "PATCH",
@@ -4223,10 +4223,6 @@ Answer: False</pre>
     if (!confirm(`Remove ${name}'s photo?`)) return;
     clearMsg("studentsMsg");
     try {
-      const student = currentClassStudents.find(s => s.id === studentId);
-      if (student && student.photo_key) {
-        try { await photoStorage.refFromURL(student.photo_key).delete(); } catch (e) { /* best-effort */ }
-      }
       const res = await fetchWithTimeout(API_BASE + "/api/students/" + studentId + "/photo", {
         method: "DELETE",
         headers: authHeaders()
