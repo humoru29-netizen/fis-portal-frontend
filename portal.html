@@ -5364,7 +5364,7 @@ Answer: False</pre>
       );
 
       if (!result.ok) {
-        showMsg("attendanceSaveMsg", (result.data.error || "Could not save attendance.") + " [" + (result.data.detail || "") + "]", "error");
+        showMsg("attendanceSaveMsg", result.data.error || "Could not save attendance.", "error");
         return;
       }
 
@@ -6009,10 +6009,12 @@ Answer: False</pre>
     showMsg("rcBulkPrintMsg", "Building PDF…", "success");
 
     const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
+    container.style.position = "absolute";
+    container.style.left = "0";
     container.style.top = "0";
+    container.style.zIndex = "-9999";
     container.style.width = "780px";
+    container.style.background = "#fff";
     container.innerHTML = `<style>${REPORT_CARD_STYLES}</style>` + cards.map(rc => reportCardBlockHtml(rc)).join("");
     document.body.appendChild(container);
 
@@ -6022,7 +6024,7 @@ Answer: False</pre>
         .set({
           margin: 10,
           filename: "report-cards.pdf",
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.scrollWidth, windowHeight: container.scrollHeight },
           jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] }
         })
@@ -6206,10 +6208,12 @@ Answer: False</pre>
     if (buttonEl) buttonEl.disabled = true;
 
     const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
+    container.style.position = "absolute";
+    container.style.left = "0";
     container.style.top = "0";
+    container.style.zIndex = "-9999";
     container.style.width = "780px";
+    container.style.background = "#fff";
     container.innerHTML = `<style>${REPORT_CARD_STYLES}</style>` + reportCardBlockHtml(rc);
     document.body.appendChild(container);
 
@@ -6220,7 +6224,7 @@ Answer: False</pre>
         .set({
           margin: 10,
           filename,
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.scrollWidth, windowHeight: container.scrollHeight },
           jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] }
         })
