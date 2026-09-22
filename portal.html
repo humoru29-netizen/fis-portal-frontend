@@ -1505,6 +1505,7 @@
     <div class="ticker-track" id="dashTickerTrack"></div>
   </div>
 
+  <img id="dashPhoto" src="" alt="" style="display:none; width:80px; height:80px; object-fit:cover; border-radius:50%; border:2px solid var(--gold); margin-bottom:8px;">
   <h2 id="dashGreeting">Welcome</h2>
   <p id="dashDetail">You are signed in.</p>
   <button id="logoutBtn">Sign Out</button>
@@ -3390,9 +3391,16 @@ Answer: False</pre>
       el("studentAnnArea").style.display = "none";
       el("studentReportArea").style.display = "none";
       el("dashTickerBar").style.display = "none";
+      el("dashPhoto").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+      if (profile.photoUrl) {
+        el("dashPhoto").src = profile.photoUrl;
+        el("dashPhoto").style.display = "block";
+      } else {
+        el("dashPhoto").style.display = "none";
+      }
       el("studentCbtArea").style.display = "block";
       el("studentAnnArea").style.display = "block";
       el("studentReportArea").style.display = "block";
@@ -6019,6 +6027,7 @@ Answer: False</pre>
     document.body.appendChild(container);
 
     try {
+      await waitForRenderAndImages(container);
       await html2pdf()
         .from(container)
         .set({
@@ -6066,6 +6075,7 @@ Answer: False</pre>
     return `
       <div class="report-page">
         <div class="frame">
+          ${rc.student.photoUrl ? `<img class="student-photo" src="${rc.student.photoUrl}" alt="">` : ""}
           <div class="letterhead">
             <img src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="School Crest">
             <h1>Faith International School, Itobe</h1>
@@ -6170,7 +6180,8 @@ Answer: False</pre>
     body { font-family: Georgia, serif; color: #222; }
     .report-page { max-width: 780px; margin: 20px auto; page-break-after: always; }
     .report-page:last-child { page-break-after: auto; }
-    .frame { border: 3px double #7a1f2b; padding: 24px 30px; }
+    .frame { position: relative; border: 3px double #7a1f2b; padding: 24px 30px; }
+    .student-photo { position: absolute; top: 20px; right: 24px; width: 80px; height: 80px; object-fit: cover; border: 1px solid #999; border-radius: 4px; }
     .letterhead { text-align: center; }
     .letterhead img { width: 90px; height: auto; }
     .letterhead h1 { margin: 8px 0 0; font-size: 1.5em; color: #7a1f2b; letter-spacing: 0.5px; }
@@ -6204,6 +6215,21 @@ Answer: False</pre>
     @media print { body { margin: 0; } }
   `;
 
+  async function waitForRenderAndImages(container) {
+    const imgs = Array.from(container.querySelectorAll("img"));
+    await Promise.all(imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(resolve => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    }));
+    // Give the browser two animation frames to actually lay out and paint
+    // the newly-inserted content before html2canvas snapshots it — without
+    // this, a freshly appended container can still be captured blank.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
   async function downloadReportCardPdf(rc, buttonEl) {
     if (buttonEl) buttonEl.disabled = true;
 
@@ -6218,6 +6244,7 @@ Answer: False</pre>
     document.body.appendChild(container);
 
     try {
+      await waitForRenderAndImages(container);
       const filename = (rc.student.name || "report-card").replace(/\s+/g, "_") + "_" + (rc.term || "").replace(/\s+/g, "_") + ".pdf";
       await html2pdf()
         .from(container)
