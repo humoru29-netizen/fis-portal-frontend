@@ -5596,6 +5596,7 @@ Answer: False</pre>
       }
 
       showMsg("feeRecordMsg", result.data.message || "Payment recorded.", "success");
+      if (result.data.receipt) printFeeReceipt(result.data.receipt);
       el("feeRecAmount").value = "";
       el("feeRecNotes").value = "";
     } catch (err) {
@@ -5720,13 +5721,33 @@ Answer: False</pre>
         </div>
         <div style="margin-top:10px;">
           ${transactions.length ? transactions.map(t => `
-            <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f0e6c8; font-size:0.9em;">
               <span>${new Date(t.recorded_at).toLocaleDateString()} — ${t.type}${t.notes ? " (" + t.notes + ")" : ""}</span>
-              <span>${Number(t.amount).toLocaleString()}</span>
+              <span>${Number(t.amount).toLocaleString()} <a class="receipt-reprint-link" data-tx-id="${t.id}" style="margin-left:10px; font-size:0.85em; color:var(--maroon); cursor:pointer;">Print Receipt</a></span>
             </div>
           `).join("") : `<p style="color:#999;">No payments recorded yet.</p>`}
         </div>
       `;
+
+      result.querySelectorAll(".receipt-reprint-link").forEach(link => {
+        link.addEventListener("click", () => {
+          const t = transactions.find(tx => tx.id === link.dataset.txId);
+          if (!t) return;
+          printFeeReceipt({
+            studentName: data.studentName,
+            admissionNo: data.admissionNo,
+            amount: t.amount,
+            type: t.type,
+            term,
+            session,
+            notes: t.notes,
+            recordedAt: t.recorded_at,
+            feeAmount: data.feeAmount,
+            totalPaid: data.totalPaid,
+            balance: data.balance
+          });
+        });
+      });
     } catch (err) {
       result.innerHTML = "";
       showMsg("feeStuMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
@@ -9320,6 +9341,63 @@ Answer: False</pre>
     printWindow.document.write(letterHtml);
     printWindow.document.close();
     printWindow.onload = function () { printWindow.print(); };
+  }
+
+  function printFeeReceipt(r) {
+    const paidOn = r.recordedAt
+      ? new Date(r.recordedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+    const receiptHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Receipt — ${r.studentName}</title>
+        <style>
+          body { font-family: Georgia, serif; color: #222; max-width: 480px; margin: 40px auto; line-height: 1.6; }
+          .letterhead { text-align: center; border-bottom: 3px double #7a1f2b; padding-bottom: 16px; margin-bottom: 24px; }
+          .letterhead h1 { margin: 8px 0 0; font-size: 1.3em; }
+          .letterhead p { margin: 4px 0 0; color: #555; }
+          .field { display: flex; justify-content: space-between; margin: 8px 0; padding-bottom: 6px; border-bottom: 1px dotted #ccc; }
+          .field strong { color: #333; }
+          .amount-row { font-size: 1.2em; font-weight: bold; margin: 20px 0; padding: 10px; background: #f7f3ea; border-radius: 6px; text-align: center; }
+          .print-btn { display: block; margin: 0 auto 20px; padding: 8px 16px; background: #7a1f2b; color: #fff;
+                       border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+          @media print {
+            body { margin: 0; }
+            .print-btn { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <button class="print-btn" onclick="window.print()">Print</button>
+        <div class="letterhead">
+          <h1>Faith International School, Itobe</h1>
+          <p>Fee Payment Receipt</p>
+        </div>
+
+        <div class="field"><strong>Student:</strong> <span>${r.studentName}</span></div>
+        <div class="field"><strong>Admission No:</strong> <span>${r.admissionNo || "—"}</span></div>
+        <div class="field"><strong>Term / Session:</strong> <span>${r.term} — ${r.session}</span></div>
+        <div class="field"><strong>Payment Type:</strong> <span>${r.type}</span></div>
+        ${r.notes ? `<div class="field"><strong>Notes:</strong> <span>${r.notes}</span></div>` : ""}
+        <div class="field"><strong>Date:</strong> <span>${paidOn}</span></div>
+
+        <div class="amount-row">Amount Paid: ₦${Number(r.amount).toLocaleString()}</div>
+
+        <div class="field"><strong>Term Fee:</strong> <span>₦${Number(r.feeAmount).toLocaleString()}</span></div>
+        <div class="field"><strong>Total Paid (this term):</strong> <span>₦${Number(r.totalPaid).toLocaleString()}</span></div>
+        <div class="field"><strong>Balance:</strong> <span>₦${Number(r.balance).toLocaleString()}</span></div>
+
+        <p style="margin-top:30px; text-align:center; color:#777; font-size:0.85em;">Thank you for your prompt payment.</p>
+      </body>
+      </html>
+    `;
+
+    const receiptWindow = window.open("", "_blank");
+    receiptWindow.document.write(receiptHtml);
+    receiptWindow.document.close();
   }
 
   async function populateAdmissionClassSelects() {
