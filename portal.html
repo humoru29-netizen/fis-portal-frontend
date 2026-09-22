@@ -1208,7 +1208,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
   const CLOUDINARY_CLOUD_NAME = "i1nd7jb7";
-  const CLOUDINARY_UPLOAD_PRESET = "student_photos";
+  const CLOUDINARY_UPLOAD_PRESET = "students_phots";
 </script>
 </head>
 <body>
@@ -1505,7 +1505,13 @@
     <div class="ticker-track" id="dashTickerTrack"></div>
   </div>
 
-  <img id="dashPhoto" src="" alt="" style="display:none; width:80px; height:80px; object-fit:cover; border-radius:50%; border:2px solid var(--gold); margin-bottom:8px;">
+  <div id="dashPhotoWrap" style="display:none; margin-bottom:8px;">
+    <img id="dashPhoto" src="" alt="" style="display:none; width:80px; height:80px; object-fit:cover; border-radius:50%; border:2px solid var(--gold); margin:0 auto 6px;">
+    <label class="photo-upload-label" style="display:block; text-align:center;">
+      <span id="dashPhotoLabel">Add photo</span>
+      <input type="file" id="dashPhotoInput" accept="image/jpeg,image/png,image/webp" hidden>
+    </label>
+  </div>
   <h2 id="dashGreeting">Welcome</h2>
   <p id="dashDetail">You are signed in.</p>
   <button id="logoutBtn">Sign Out</button>
@@ -3392,15 +3398,18 @@ Answer: False</pre>
       el("studentAnnArea").style.display = "none";
       el("studentReportArea").style.display = "none";
       el("dashTickerBar").style.display = "none";
-      el("dashPhoto").style.display = "none";
+      el("dashPhotoWrap").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
       el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+      el("dashPhotoWrap").style.display = "block";
       if (profile.photoUrl) {
         el("dashPhoto").src = profile.photoUrl;
         el("dashPhoto").style.display = "block";
+        el("dashPhotoLabel").textContent = "Change photo";
       } else {
         el("dashPhoto").style.display = "none";
+        el("dashPhotoLabel").textContent = "Add photo";
       }
       el("studentCbtArea").style.display = "block";
       el("studentAnnArea").style.display = "block";
@@ -4229,6 +4238,57 @@ Answer: False</pre>
       showMsg("studentsMsg", reason, "error");
     }
   }
+
+  async function uploadOwnPhoto(file) {
+    clearMsg("dashPhotoMsg");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Photo must be a JPEG, PNG, or WEBP image.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Photo must be smaller than 2MB.");
+      return;
+    }
+    try {
+      const cloudinaryForm = new FormData();
+      cloudinaryForm.append("file", file);
+      cloudinaryForm.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      cloudinaryForm.append("folder", "student-photos");
+      cloudinaryForm.append("public_id", currentStudentId);
+
+      const uploadRes = await fetchWithTimeout(
+        "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload",
+        { method: "POST", body: cloudinaryForm },
+        20000
+      );
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error((uploadData.error && uploadData.error.message) || "Photo upload failed.");
+      const photoUrl = uploadData.secure_url;
+
+      const res = await fetchWithTimeout(API_BASE + "/api/students/" + currentStudentId + "/photo", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ photoUrl })
+      }, 20000);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save photo.");
+
+      el("dashPhoto").src = photoUrl;
+      el("dashPhoto").style.display = "block";
+      el("dashPhotoLabel").textContent = "Change photo";
+
+      const profile = JSON.parse(localStorage.getItem("fis_profile") || "{}");
+      profile.photoUrl = photoUrl;
+      localStorage.setItem("fis_profile", JSON.stringify(profile));
+    } catch (err) {
+      alert((err && err.message) || "Could not upload photo. Check your connection.");
+    }
+  }
+
+  el("dashPhotoInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) uploadOwnPhoto(file);
+  });
 
   async function uploadStudentPhoto(studentId, file, classId) {
     clearMsg("studentsMsg");
