@@ -2078,6 +2078,7 @@
 
           <button type="button" id="feeRecordBtn" class="submit">Record Payment</button>
           <div id="feeRecordMsg" class="msg"></div>
+          <button type="button" id="feeRecPrintBtn" class="submit" style="display:none; margin-top:8px;">Print Receipt</button>
         </div>
 
         <!-- ---------- SET FEE ---------- -->
@@ -5566,6 +5567,7 @@ Answer: False</pre>
   // ---------- Fees: record a payment (always live — never offline-queued) ----------
   el("feeRecordBtn").addEventListener("click", async () => {
     clearMsg("feeRecordMsg");
+    el("feeRecPrintBtn").style.display = "none";
     const studentId = el("feeRecStudentSelect").value;
     const amount = el("feeRecAmount").value;
     const type = el("feeRecType").value;
@@ -5596,7 +5598,11 @@ Answer: False</pre>
       }
 
       showMsg("feeRecordMsg", result.data.message || "Payment recorded.", "success");
-      if (result.data.receipt) printFeeReceipt(result.data.receipt);
+      if (result.data.receipt) {
+        const printBtn = el("feeRecPrintBtn");
+        printBtn.style.display = "inline-block";
+        printBtn.onclick = () => printFeeReceipt(result.data.receipt);
+      }
       el("feeRecAmount").value = "";
       el("feeRecNotes").value = "";
     } catch (err) {
