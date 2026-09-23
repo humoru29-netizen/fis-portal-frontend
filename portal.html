@@ -1548,6 +1548,33 @@
     <div id="stuRcMsg" class="msg"></div>
     <div id="stuRcResult" style="margin-top:16px;"></div>
   </div>
+
+  <div id="studentFeeArea" style="display:none; margin-top:24px; text-align:left; max-width:500px; margin-left:auto; margin-right:auto;">
+    <h3>My Fee History</h3>
+    <p class="sub">View your school fees, payments and current balance for the selected term and session.</p>
+    <div class="row2">
+      <div>
+        <label for="stuFeeTerm">Term</label>
+        <select id="stuFeeTerm">
+          <option value="">Select…</option>
+          <option value="First Term">First Term</option>
+          <option value="Second Term">Second Term</option>
+          <option value="Third Term">Third Term</option>
+        </select>
+      </div>
+      <div>
+        <label for="stuFeeSession">Session</label>
+        <input type="text" id="stuFeeSession" value="2026/2027" placeholder="2026/2027">
+      </div>
+    </div>
+    <button type="button" id="stuFeeLoadBtn" class="submit">View My Fee History</button>
+    <div id="stuFeeMsg" class="msg"></div>
+    <div id="stuFeeSummary" style="margin-top:16px;"></div>
+    <div id="stuFeeResult" style="margin-top:12px;"></div>
+    <div id="stuFeePrintWrap" style="display:none; margin-top:12px;">
+      <button type="button" id="stuFeePrintBtn" class="submit">🖨️ Print Fee History</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== CBT TEST-TAKING VIEW (full screen, shown while a student is attempting a test) ===== -->
@@ -3430,6 +3457,7 @@ Answer: False</pre>
       el("studentCbtArea").style.display = "none";
       el("studentAnnArea").style.display = "none";
       el("studentReportArea").style.display = "none";
+      el("studentFeeArea").style.display = "none";
       el("dashTickerBar").style.display = "none";
       el("dashPhoto").style.display = "none";
     } else {
@@ -3444,11 +3472,103 @@ Answer: False</pre>
       el("studentCbtArea").style.display = "block";
       el("studentAnnArea").style.display = "block";
       el("studentReportArea").style.display = "block";
+      el("studentFeeArea").style.display = "block";
       loadStudentCbtList();
       loadStudentAnnouncements();
       renderTicker("dashTickerBar", "dashTickerTrack");
     }
   }
+
+  // ---------- Student dashboard: own fee history ----------
+  async function loadStudentFeeHistory() {
+    clearMsg("stuFeeMsg");
+    const term = el("stuFeeTerm").value;
+    const session = el("stuFeeSession").value.trim();
+    const result = el("stuFeeResult");
+    const summary = el("stuFeeSummary");
+    const printWrap = el("stuFeePrintWrap");
+
+    result.innerHTML = "";
+    summary.innerHTML = "";
+    printWrap.style.display = "none";
+
+    if (!currentStudentId || !term || !session) {
+      showMsg("stuFeeMsg", "Please select a term and enter the session.", "error");
+      return;
+    }
+
+    const btn = el("stuFeeLoadBtn");
+    btn.disabled = true;
+    result.innerHTML = `<div class="empty-state">Loading fee history…</div>`;
+
+    try {
+      const res = await fetchWithTimeout(
+        API_BASE + "/api/fees/student/" + encodeURIComponent(currentStudentId) +
+        "?term=" + encodeURIComponent(term) + "&session=" + encodeURIComponent(session),
+        { method: "GET", headers: authHeaders() }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        result.innerHTML = "";
+        showMsg("stuFeeMsg", data.error || "Could not load your fee history.", "error");
+        return;
+      }
+
+      const money = n => "₦" + Number(n || 0).toLocaleString();
+      const transactions = data.transactions || [];
+
+      summary.innerHTML = `
+        <div class="roster-item">
+          <p class="roster-item-name">${data.studentName || "My Fee Account"}</p>
+          <p class="roster-item-meta">Term: ${term} · Session: ${session}</p>
+          <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div style="padding:10px; background:#f7f3ea; border-radius:7px; text-align:center;">
+              <div style="font-size:11px; color:var(--muted);">Term Fee</div>
+              <strong>${money(data.feeAmount)}</strong>
+            </div>
+            <div style="padding:10px; background:#eaf3ea; border-radius:7px; text-align:center;">
+              <div style="font-size:11px; color:var(--muted);">Total Paid</div>
+              <strong>${money(data.totalPaid)}</strong>
+            </div>
+            <div style="padding:10px; background:#fbf3d9; border-radius:7px; text-align:center;">
+              <div style="font-size:11px; color:var(--muted);">Balance</div>
+              <strong>${money(data.balance)}</strong>
+            </div>
+          </div>
+        </div>`;
+
+      result.innerHTML = transactions.length ? `
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead><tr style="background:var(--ivory);">
+              <th style="padding:9px 6px; text-align:left; border-bottom:1px solid var(--border);">Date</th>
+              <th style="padding:9px 6px; text-align:left; border-bottom:1px solid var(--border);">Type</th>
+              <th style="padding:9px 6px; text-align:right; border-bottom:1px solid var(--border);">Amount</th>
+            </tr></thead>
+            <tbody>${transactions.map(t => `
+              <tr>
+                <td style="padding:9px 6px; border-bottom:1px solid #f0e6c8;">${t.recorded_at ? new Date(t.recorded_at).toLocaleDateString("en-GB") : "—"}</td>
+                <td style="padding:9px 6px; border-bottom:1px solid #f0e6c8;">${t.type || "Payment"}${t.notes ? `<div style="font-size:11px;color:var(--muted);">${t.notes}</div>` : ""}</td>
+                <td style="padding:9px 6px; text-align:right; border-bottom:1px solid #f0e6c8;">${money(t.amount)}</td>
+              </tr>`).join("")}</tbody>
+          </table>
+        </div>` : `<div class="empty-state">No payments recorded for this term/session.</div>`;
+
+      printWrap.style.display = "block";
+      el("stuFeePrintBtn").onclick = () => printFeeHistory({
+        studentName: data.studentName,
+        admissionNo: data.admissionNo || (JSON.parse(localStorage.getItem("fis_profile") || "{}").admissionNo || "—"),
+        term, session, feeAmount: data.feeAmount, totalPaid: data.totalPaid, balance: data.balance, transactions
+      });
+    } catch (err) {
+      result.innerHTML = "";
+      showMsg("stuFeeMsg", (err && err.message) || "Could not reach the portal server.", "error");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  el("stuFeeLoadBtn").addEventListener("click", loadStudentFeeHistory);
 
   const ROLE_LABELS = {
     general_admin: "General Admin",
@@ -5563,11 +5683,15 @@ Answer: False</pre>
     try {
       classes = await fetchClasses();
     } catch (err) {
+      const reason = (err && err.message) || "Could not load classes. Check your connection and try again.";
+      ["feeRecordMsg", "feeHistMsg", "feeStuMsg"].forEach(id => {
+        if (el(id)) showMsg(id, reason, "error");
+      });
       return;
     }
     const options = `<option value="">Select a class…</option>` +
       classes.map(c => `<option value="${c.id}">${c.name} (${c.level})</option>`).join("");
-    ["feeRecClassSelect", "feeSetClassSelect", "feeStuClassSelect", "feeClassSelect"].forEach(id => {
+    ["feeRecClassSelect", "feeSetClassSelect", "feeStuClassSelect", "feeHistClassSelect", "feeClassSelect"].forEach(id => {
       if (el(id)) el(id).innerHTML = options;
     });
   }
