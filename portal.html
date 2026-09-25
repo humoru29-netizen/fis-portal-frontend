@@ -10062,7 +10062,7 @@ Answer: False</pre>
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ classId, term, session })
-      });
+      }, 45000); // longer timeout: may text many parents at once
       const data = await res.json();
 
       if (!res.ok) {
@@ -10111,7 +10111,7 @@ Answer: False</pre>
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ classId, term, session })
-      });
+      }, 45000); // longer timeout: may text many guardians at once
       const data = await res.json();
 
       if (!res.ok) {
@@ -10206,7 +10206,7 @@ Answer: False</pre>
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ staffIds, message })
-      });
+      }, 45000); // longer timeout: may text many teachers at once
       const data = await res.json();
 
       if (!res.ok) {
@@ -10258,7 +10258,7 @@ Answer: False</pre>
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ phones, message, label: label || undefined })
-      });
+      }, 45000); // longer timeout: the Worker sends to each recipient in turn, so this can take a while for a large list
       const data = await res.json();
 
       if (!res.ok) {
