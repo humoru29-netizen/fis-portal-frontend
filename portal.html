@@ -3206,7 +3206,19 @@ Answer: False</pre>
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
     try {
-      return await fetch(url, { ...options, signal: controller.signal });
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      // A 401 is the one unambiguous "your session is dead" signal (every
+      // route that checks session existence first uses it) — as opposed to
+      // 403, which is also used for a *valid* session that just lacks
+      // permission for that one action, so we leave 403 alone here.
+      // Skip this for /api/login, /api/student-login, and /api/refresh
+      // itself so a bad-password attempt or a refresh check doesn't bounce
+      // someone who was never logged in (or whose session just expired) to
+      // yet another redirect loop.
+      if (res.status === 401 && !url.includes("/api/login") && !url.includes("/api/student-login") && !url.includes("/api/refresh")) {
+        forceLogoutExpired();
+      }
+      return res;
     } finally {
       clearTimeout(timer);
     }
@@ -3645,6 +3657,80 @@ Answer: False</pre>
     localStorage.removeItem("fis_profile");
   }
 
+  // =====================================================================
+  // SESSION WATCH — decodes the JWT's own exp locally (no guessing from
+  // error text) and silently calls /api/refresh while the token is still
+  // valid but getting close to expiry, so an active user never actually
+  // hits the wall. If it's already expired, logs out cleanly with a clear
+  // message instead of leaving scattered "not authenticated" errors.
+  // =====================================================================
+  const SESSION_REFRESH_THRESHOLD_SECONDS = 10 * 60; // refresh once <10 min remain
+  const SESSION_CHECK_INTERVAL_MS = 60 * 1000;        // check once a minute
+  let sessionCheckInterval = null;
+
+  function decodeTokenPayload(token) {
+    try {
+      const payloadPart = token.split(".")[1];
+      const padded = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+      const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+      return JSON.parse(atob(padded + pad));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function stopSessionWatch() {
+    if (sessionCheckInterval) {
+      clearInterval(sessionCheckInterval);
+      sessionCheckInterval = null;
+    }
+  }
+
+  function forceLogoutExpired() {
+    clearSession();
+    currentAdminRole = null;
+    currentStudentId = null;
+    stopSessionWatch();
+    showLoginView();
+    showMsg("staffLoginMsg", "Your session expired — please log in again.", "error");
+    showMsg("studentLoginMsg", "Your session expired — please log in again.", "error");
+  }
+
+  async function refreshTokenIfNeeded() {
+    const token = localStorage.getItem("fis_token");
+    if (!token) return;
+
+    const payload = decodeTokenPayload(token);
+    if (!payload || !payload.exp) return;
+
+    const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
+    if (secondsLeft <= 0) {
+      forceLogoutExpired();
+      return;
+    }
+    if (secondsLeft > SESSION_REFRESH_THRESHOLD_SECONDS) return;
+
+    try {
+      const res = await fetchWithTimeout(API_BASE + "/api/refresh", { method: "POST", headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) localStorage.setItem("fis_token", data.token);
+      } else if (res.status === 401) {
+        forceLogoutExpired();
+      }
+      // any other failure (network hiccup, timeout): leave the current
+      // token in place and try again on the next tick.
+    } catch (e) {
+      // network hiccup — try again on the next interval tick.
+    }
+  }
+
+  function startSessionWatch() {
+    stopSessionWatch();
+    refreshTokenIfNeeded();
+    sessionCheckInterval = setInterval(refreshTokenIfNeeded, SESSION_CHECK_INTERVAL_MS);
+  }
+
   function isAdminRole(role) {
     return ADMIN_ROLES.includes(role);
   }
@@ -4009,6 +4095,7 @@ Answer: False</pre>
   }
 
   function showDashboard(type, profile) {
+    startSessionWatch();
     if (type === "staff" && isAdminRole(profile.role)) {
       showAdminDashboard(profile);
     } else if (type === "staff" && profile.role === "teacher") {
@@ -4124,6 +4211,7 @@ Answer: False</pre>
   // ---------- Logout (both simple + admin) ----------
   function doLogout() {
     clearSession();
+    stopSessionWatch();
     showLoginView();
   }
   el("logoutBtn").addEventListener("click", doLogout);
