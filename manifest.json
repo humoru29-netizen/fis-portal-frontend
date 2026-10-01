@@ -2,7 +2,7 @@
   "name": "Faith International School, Itobe — Portal",
   "short_name": "FIS Itobe",
   "description": "Staff, student, and admin portal for Faith International School, Itobe.",
-  "start_url": "./portal.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
