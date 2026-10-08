@@ -4746,7 +4746,7 @@ Answer: False</pre>
       el("dashPhotoWrap").style.display = "none";
     } else {
       el("dashGreeting").textContent = "Welcome, " + profile.name;
-      el("dashDetail").textContent = "Admission No: " + profile.admissionNo;
+      el("dashDetail").textContent = "Admission No: " + profile.admissionNo + (profile.gender ? " · " + profile.gender : "");
       el("dashPhotoWrap").style.display = "block";
       if (profile.photoUrl) {
         el("dashPhoto").src = profile.photoUrl;
@@ -5704,6 +5704,7 @@ Answer: False</pre>
           <div class="idc-name">${idEsc(s.name)}</div>
           <div class="idc-row"><i>Class</i>${idEsc(ctx.className)}</div>
           <div class="idc-row"><i>Adm. No.</i>${idEsc(s.admission_no || "—")}</div>
+          ${s.gender ? `<div class="idc-row"><i>Gender</i>${idEsc(s.gender)}</div>` : ""}
           ${dob ? `<div class="idc-row"><i>D.O.B.</i>${idEsc(dob)}</div>` : ""}
           ${ctx.session ? `<div class="idc-row"><i>Session</i>${idEsc(ctx.session)}</div>` : ""}
         </div>
@@ -8953,7 +8954,7 @@ Answer: False</pre>
 
   function reportCardBlockHtml(rc) {
     const totalObtainable = rc.subjects.length * 100;
-    const positionText = rc.position ? ordinal(rc.position) + " out of " + rc.outOf : "—";
+    const positionText = rc.position ? ordinal(rc.position) + (rc.outOf ? " out of " + rc.outOf : "") : "—";
 
     return `
       <div class="report-page">
@@ -9540,7 +9541,7 @@ Answer: False</pre>
           <p class="roster-item-name">${data.student.name} — ${data.student.className}</p>
           <p class="roster-item-meta">
             ${data.subjects.length} subject(s) approved · Average: ${data.average !== null ? data.average.toFixed(1) : "—"} ·
-            Position: ${data.position ? data.position + " of " + data.outOf : "—"}
+            Position: ${data.position ? ordinal(data.position) + (data.outOf ? " out of " + data.outOf : "") : "—"}
             ${data.pendingCount > 0 ? " · " + data.pendingCount + " subject(s) pending approval" : ""}
             ${data.withheldCount > 0 ? " · " + data.withheldCount + " subject(s) withheld" : ""}
           </p>
@@ -10747,7 +10748,7 @@ Answer: False</pre>
           <p class="roster-item-name">${data.subjects.length} subject(s) approved so far</p>
           <p class="roster-item-meta">
             Average: ${data.average !== null ? data.average.toFixed(1) + "%" : "—"} ·
-            Position: ${data.position ? ordinal(data.position) + " out of " + data.outOf : "—"}
+            Position: ${data.position ? ordinal(data.position) + (data.outOf ? " out of " + data.outOf : "") : "—"}
             ${data.pendingCount > 0 ? " · " + data.pendingCount + " subject(s) still pending approval" : ""}
             ${data.withheldCount > 0 ? " · " + data.withheldCount + " subject(s) withheld" : ""}
           </p>
@@ -13111,7 +13112,7 @@ Answer: False</pre>
           <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
             <input type="checkbox" class="ss-student-checkbox" value="${s.student_id}" style="width:auto;">
             <span>
-              <p class="pending-result-name">${s.student_name}${s.admission_no ? " · " + s.admission_no : ""}</p>
+              <p class="pending-result-name">${s.student_name}${s.admission_no ? " · " + s.admission_no : ""}${s.gender ? " · " + s.gender : ""}</p>
               <p class="pending-result-meta">${statusLabel[s.overall] || s.overall} ${s.total ? "(" + s.approved + " released, " + s.pending + " pending, " + s.withheld + " withheld of " + s.total + ")" : ""}</p>
             </span>
           </label>
