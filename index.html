@@ -8577,6 +8577,28 @@ Answer: False</pre>
                       style="border:0;background:none;color:var(--maroon);font-weight:600;cursor:pointer;">
                       Print
                     </button>
+                    ${currentAdminRole && currentAdminRole !== "cashier" ? `<br><button type="button" class="fee-fix-link"
+                      data-tx-id="${t.id}"
+                      style="border:0;background:none;color:var(--maroon);font-weight:600;cursor:pointer;">
+                      Fix
+                    </button>` : ""}
+                  </td>
+                </tr>
+                <tr class="fee-fix-row" id="fee-fix-${t.id}" style="display:none;">
+                  <td colspan="4" style="padding:10px 6px; border-bottom:1px solid #f0e6c8; background:#fbf6e6;">
+                    <label>Amount (₦)</label>
+                    <input type="number" class="fee-fix-amount" min="0" step="0.01" value="${Number(t.amount)}">
+                    <label>Type</label>
+                    <select class="fee-fix-type">
+                      ${["Tuition","Development Levy","PTA Levy","Exam Fee","Uniform","Other"].map(o => `<option value="${o}"${t.type === o ? " selected" : ""}>${o}</option>`).join("")}
+                    </select>
+                    <label>Reason for correction (required)</label>
+                    <input type="text" class="fee-fix-reason" placeholder="e.g. Typed 50,000 instead of 5,000">
+                    <div style="margin-top:10px;">
+                      <button type="button" class="submit fee-fix-save" data-tx-id="${t.id}" style="width:auto; display:inline-block;">Save correction</button>
+                      <button type="button" class="btn-reject fee-fix-void" data-tx-id="${t.id}" style="width:auto; display:inline-block; margin-left:8px;">Void payment</button>
+                      <a class="fee-fix-cancel" data-tx-id="${t.id}" style="margin-left:10px; cursor:pointer; color:var(--maroon);">Cancel</a>
+                    </div>
                   </td>
                 </tr>
               `).join("")}
@@ -8605,6 +8627,53 @@ Answer: False</pre>
           });
         });
       });
+
+      result.querySelectorAll(".fee-fix-link").forEach(link => {
+        link.addEventListener("click", () => {
+          const row = el("fee-fix-" + link.dataset.txId);
+          if (row) row.style.display = row.style.display === "none" ? "" : "none";
+        });
+      });
+      result.querySelectorAll(".fee-fix-cancel").forEach(link => {
+        link.addEventListener("click", () => {
+          const row = el("fee-fix-" + link.dataset.txId);
+          if (row) row.style.display = "none";
+        });
+      });
+      async function submitFeeFix(txId, isVoid) {
+        const row = el("fee-fix-" + txId);
+        const reason = row.querySelector(".fee-fix-reason").value.trim();
+        if (!reason) {
+          showMsg("feeHistMsg", "Please type a reason for the correction.", "error");
+          return;
+        }
+        if (isVoid && !window.confirm("Void this payment? Its amount becomes 0 and it stays on record with your reason. This cannot be undone.")) return;
+        const payload = { reason };
+        if (isVoid) {
+          payload.void = true;
+        } else {
+          payload.amount = row.querySelector(".fee-fix-amount").value;
+          payload.type = row.querySelector(".fee-fix-type").value;
+        }
+        try {
+          const r = await fetchWithTimeout(API_BASE + "/api/fees/payments/" + txId, {
+            method: "PATCH",
+            headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
+            body: JSON.stringify(payload)
+          });
+          const d = await r.json();
+          if (!r.ok) {
+            showMsg("feeHistMsg", d.error || "Could not save the correction.", "error");
+            return;
+          }
+          el("feeHistLoadBtn").click();
+          showMsg("feeHistMsg", d.message || "Done.", "success");
+        } catch (err) {
+          showMsg("feeHistMsg", (err && err.message) || "Could not reach the portal server.", "error");
+        }
+      }
+      result.querySelectorAll(".fee-fix-save").forEach(b => b.addEventListener("click", () => submitFeeFix(b.dataset.txId, false)));
+      result.querySelectorAll(".fee-fix-void").forEach(b => b.addEventListener("click", () => submitFeeFix(b.dataset.txId, true)));
 
       printWrap.style.display = "block";
       el("feeHistPrintBtn").onclick = () => printFeeHistory({
