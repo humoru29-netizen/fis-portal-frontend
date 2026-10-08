@@ -3389,6 +3389,13 @@ Answer: False</pre>
               <option value="">Select…</option>
             </select>
 
+            <label for="stuGender">Gender</label>
+            <select id="stuGender">
+              <option value="">Select…</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+
             <div class="row2">
               <div>
                 <label for="stuGuardianName">Guardian Name</label>
@@ -3420,6 +3427,13 @@ Answer: False</pre>
             <label for="bulkStuSessionJoined">Session Joined (optional)</label>
             <input type="text" id="bulkStuSessionJoined" placeholder="2026/2027">
 
+            <label for="bulkStuGender">Gender for this batch</label>
+            <select id="bulkStuGender">
+              <option value="">Mixed class (add , M or , F to each line)</option>
+              <option value="Male">All male</option>
+              <option value="Female">All female</option>
+            </select>
+
             <label>Scan a photo of the class list (optional)</label>
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
               <button type="button" class="submit" id="bulkStuCamBtn" style="width:auto; flex:1;">Take Photo</button>
@@ -3432,7 +3446,7 @@ Answer: False</pre>
             <div id="bulkStuScanMsg" class="msg"></div>
 
             <label for="bulkStuNames">Students (one per line)</label>
-            <textarea id="bulkStuNames" rows="8" placeholder="Amina Yusuf&#10;John Moses, Mr Moses, 08012345678"></textarea>
+            <textarea id="bulkStuNames" rows="8" placeholder="Amina Yusuf, F&#10;John Moses, Mr Moses, 08012345678, M"></textarea>
             <p class="field-note" id="bulkStuCount"></p>
 
             <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
@@ -3929,6 +3943,7 @@ Answer: False</pre>
                 <th style="padding:8px 10px;">S/N</th>
                 <th style="padding:8px 10px;">Name</th>
                 <th style="padding:8px 10px;">Admission No.</th>
+                <th style="padding:8px 10px;">Gender</th>
               </tr>
             </thead>
             <tbody id="clTableBody"></tbody>
@@ -6161,6 +6176,7 @@ Answer: False</pre>
           classId: classSelect.value,
           level: classLevel,
           sessionJoined: el("stuSessionJoined").value.trim() || null,
+          gender: el("stuGender").value || null,
           guardianName: el("stuGuardianName").value.trim() || null,
           guardianPhone: el("stuGuardianPhone").value.trim() || null
         },
@@ -6363,11 +6379,22 @@ Answer: False</pre>
       .filter(line => line.length > 0)
       .map(line => {
         const parts = line.split(/,|\t/).map(x => x.trim());
+        // An "M", "F", "Male" or "Female" after the name sets the gender for that line.
+        let rowGender = null;
+        for (let k = parts.length - 1; k >= 1; k--) {
+          const g = parts[k].toLowerCase();
+          if (g === "m" || g === "male" || g === "f" || g === "female") {
+            rowGender = g[0] === "m" ? "Male" : "Female";
+            parts.splice(k, 1);
+            break;
+          }
+        }
         return {
           raw: line,
           name: parts[0] || "",
           guardianName: parts[1] || null,
-          guardianPhone: parts[2] || null
+          guardianPhone: parts[2] || null,
+          gender: rowGender
         };
       });
 
@@ -6407,6 +6434,7 @@ Answer: False</pre>
             classId: classSelect.value,
             level: classLevel,
             sessionJoined: sessionJoined,
+            gender: r.gender || el("bulkStuGender").value || null,
             guardianName: r.guardianName,
             guardianPhone: r.guardianPhone
           })
@@ -6490,7 +6518,7 @@ Answer: False</pre>
           </div>
           <div class="roster-item-info">
             <p class="roster-item-name">${s.name}</p>
-            <p class="roster-item-meta">${s.admission_no}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}${s.guardian_phone ? " · " + s.guardian_phone : ""}</p>
+            <p class="roster-item-meta">${s.admission_no}${s.gender ? " · " + s.gender : ""}${s.guardian_name ? " · Guardian: " + s.guardian_name : ""}${s.guardian_phone ? " · " + s.guardian_phone : ""}</p>
             <a class="edit-student-link" data-id="${s.id}">Edit</a>
             <a class="delete-link" data-id="${s.id}" data-name="${s.name}">Remove student</a>
           </div>
@@ -6500,6 +6528,13 @@ Answer: False</pre>
 
             <label>Class</label>
             <select class="edit-stu-class"><option value="">Loading…</option></select>
+
+            <label>Gender</label>
+            <select class="edit-stu-gender">
+              <option value="">Not set</option>
+              <option value="Male"${s.gender === "Male" ? " selected" : ""}>Male</option>
+              <option value="Female"${s.gender === "Female" ? " selected" : ""}>Female</option>
+            </select>
 
             <div class="row2">
               <div>
@@ -6599,6 +6634,7 @@ Answer: False</pre>
     const guardianPhone = formDiv.querySelector(".edit-stu-guardian-phone").value.trim();
     const dob = formDiv.querySelector(".edit-stu-dob").value;
     const sessionJoined = formDiv.querySelector(".edit-stu-session").value.trim();
+    const gender = formDiv.querySelector(".edit-stu-gender").value;
 
     if (!name || !newClassId) {
       showMsg(msgId, "Full name and class are required.", "error");
@@ -6617,7 +6653,8 @@ Answer: False</pre>
           sessionJoined: sessionJoined || undefined,
           guardianName: guardianName || undefined,
           guardianPhone: guardianPhone || undefined,
-          dob: dob || undefined
+          dob: dob || undefined,
+          gender: gender || undefined
         })
       });
       const data = await res.json();
@@ -6949,7 +6986,7 @@ Answer: False</pre>
           if (s.has_pin) {
             // Existing PIN for this term/session — decrypted server-side,
             // so it's still printable without generating a new one.
-            rows.push({ name: s.name, admissionNo: s.admission_no, pin: s.pin || null, alreadyAssigned: true, unrecoverable: !s.pin });
+            rows.push({ name: s.name, admissionNo: s.admission_no, gender: s.gender || "", pin: s.pin || null, alreadyAssigned: true, unrecoverable: !s.pin });
             continue;
           }
           try {
@@ -6962,11 +6999,12 @@ Answer: False</pre>
             rows.push({
               name: s.name,
               admissionNo: s.admission_no,
+              gender: s.gender || "",
               pin: res.ok ? data.pin : null,
               error: res.ok ? null : (data.error || "Failed")
             });
           } catch (err) {
-            rows.push({ name: s.name, admissionNo: s.admission_no, pin: null, error: "Network error" });
+            rows.push({ name: s.name, admissionNo: s.admission_no, gender: s.gender || "", pin: null, error: "Network error" });
           }
         }
 
@@ -7022,6 +7060,7 @@ Answer: False</pre>
           <p class="pin-slip-title">Student Login PIN</p>
           <p class="pin-slip-name">${r.name}</p>
           <p class="pin-slip-row"><span>Admission No:</span> <strong>${r.admissionNo}</strong></p>
+          ${r.gender ? `<p class="pin-slip-row"><span>Gender:</span> <strong>${r.gender}</strong></p>` : ""}
           <p class="pin-slip-row"><span>PIN:</span> <strong class="pin-slip-pin">${r.pin}</strong></p>
           <p class="pin-slip-row"><span>Term/Session:</span> ${meta.term}, ${meta.session}</p>
           <p class="pin-slip-row"><span>Portal:</span> <strong>www.fissitobe.com.ng</strong></p>
@@ -8942,6 +8981,11 @@ Answer: False</pre>
               <td><span class="info-label">Term</span><br><strong>${rc.term}</strong></td>
               <td><span class="info-label">Session</span><br><strong>${rc.session}</strong></td>
             </tr>
+            ${rc.student.gender ? `
+            <tr>
+              <td colspan="2"><span class="info-label">Gender</span><br><strong>${rc.student.gender}</strong></td>
+            </tr>
+            ` : ""}
             ${(rc.termEnds || rc.nextTermBegins) ? `
             <tr>
               <td><span class="info-label">This Term Ends</span><br><strong>${rc.termEnds || "—"}</strong></td>
@@ -13503,20 +13547,21 @@ Answer: False</pre>
         return;
       }
 
-      currentClassListData = { className, rows: students.map(s => ({ name: s.name, admissionNo: s.admission_no })) };
+      currentClassListData = { className, rows: students.map(s => ({ name: s.name, admissionNo: s.admission_no, gender: s.gender || "" })) };
 
       el("clTableBody").innerHTML = students.map((s, i) => `
         <tr style="border-bottom:1px solid #ddd;">
           <td style="padding:8px 10px;">${i + 1}</td>
           <td style="padding:8px 10px;">${s.name}</td>
           <td style="padding:8px 10px;">${s.admission_no}</td>
+          <td style="padding:8px 10px;">${s.gender || ""}</td>
         </tr>
       `).join("");
 
       el("clLogo").src = "data:image/png;base64," + SCHOOL_LOGO_BASE64;
       el("clSchoolName").textContent = CL_SCHOOL_NAME;
       el("clClassName").textContent = "Class: " + className;
-      el("clCount").textContent = "Class List — " + students.length + " student(s)";
+      el("clCount").textContent = "Class List — " + students.length + " student(s)" + clGenderSummary(students.map(s => s.gender));
       el("clHeader").style.display = "block";
       table.style.display = "table";
       actions.style.display = "block";
@@ -13524,6 +13569,13 @@ Answer: False</pre>
       showMsg("clMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
     }
   });
+
+  // "(Male: 20, Female: 28)" — empty if no gender has been recorded yet
+  function clGenderSummary(genders) {
+    const m = genders.filter(g => g === "Male").length;
+    const f = genders.filter(g => g === "Female").length;
+    return (m || f) ? " (Male: " + m + ", Female: " + f + ")" : "";
+  }
 
   el("clPrintBtn").addEventListener("click", () => {
     if (!currentClassListData.rows.length) return;
@@ -13533,6 +13585,7 @@ Answer: False</pre>
         <td>${i + 1}</td>
         <td>${r.name}</td>
         <td>${r.admissionNo}</td>
+        <td>${r.gender || ""}</td>
       </tr>
     `).join("");
 
@@ -13561,6 +13614,7 @@ Answer: False</pre>
           * { box-sizing: border-box; }
           table { width: 100%; border-collapse: collapse; table-layout: fixed; }
           th:nth-child(1) { width: 9%; }
+          th:nth-child(4) { width: 14%; }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }
           th, td { overflow-wrap: anywhere; border: 1px solid #999; padding: 4px 8px; text-align: left; font-size: 12px; line-height: 1.25; }
@@ -13577,11 +13631,11 @@ Answer: False</pre>
           <img class="logo" src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="">
           <div class="school">${CL_SCHOOL_NAME}</div>
           <div class="cls">Class: ${currentClassListData.className}</div>
-          <div class="cnt">Class List — ${currentClassListData.rows.length} student(s)</div>
+          <div class="cnt">Class List — ${currentClassListData.rows.length} student(s)${clGenderSummary(currentClassListData.rows.map(r => r.gender))}</div>
           <div class="rule"></div>
         </div>
         <table>
-          <thead><tr><th>S/N</th><th>Name</th><th>Admission No.</th></tr></thead>
+          <thead><tr><th>S/N</th><th>Name</th><th>Admission No.</th><th>Gender</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
         <button class="print-btn" onclick="window.print()">Print</button>
@@ -13601,9 +13655,9 @@ Answer: False</pre>
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
 
-    const lines = [escapeCsv(CL_SCHOOL_NAME), escapeCsv("Class: " + currentClassListData.className), "", "S/N,Name,Admission No."];
+    const lines = [escapeCsv(CL_SCHOOL_NAME), escapeCsv("Class: " + currentClassListData.className), "", "S/N,Name,Admission No.,Gender"];
     currentClassListData.rows.forEach((r, i) => {
-      lines.push([i + 1, escapeCsv(r.name), escapeCsv(r.admissionNo)].join(","));
+      lines.push([i + 1, escapeCsv(r.name), escapeCsv(r.admissionNo), escapeCsv(r.gender)].join(","));
     });
 
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
