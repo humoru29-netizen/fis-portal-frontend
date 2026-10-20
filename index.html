@@ -4005,6 +4005,9 @@ Answer: False</pre>
     const box = el(elemId);
     box.textContent = text;
     box.className = "msg " + type;
+    // Long lists (e.g. a class of students) can push the message off screen, which made
+    // failed actions look like "no response". Bring the message into view if needed.
+    try { if (text) box.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
   }
 
   function clearMsg(elemId) {
