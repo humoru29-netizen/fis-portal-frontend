@@ -5768,6 +5768,9 @@ Answer: False</pre>
     .idc-motto { position: absolute; left: 0; right: 0; bottom: 0; height: 6mm; background: #6E1423; color: #fff; font-size: 7pt; font-style: italic; line-height: 6mm; }
     .idc.p .idc-motto { background: #1E88E5; border-top: 0.8mm solid #FFC107; line-height: 5.2mm; }
     .idc.p .idc-bhead { color: #6E1423; }
+    .idc-meta { position: absolute; left: 26mm; bottom: 7.2mm; width: 28mm; text-align: left; }
+    .idc-meta span { display: block; font-size: 5.8pt; line-height: 2.5mm; color: #6b5f58; }
+    .idc-meta strong { display: block; font-size: 7.2pt; line-height: 3.2mm; color: var(--c); letter-spacing: 0.2px; }
   `;
 
   function idHasPhoto(s) {
@@ -5775,6 +5778,11 @@ Answer: False</pre>
   }
 
   function idLevelClass(s) { return s && s.level === "secondary" ? "s" : "p"; }
+
+  function idFmtDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
+    return m ? m[3] + "/" + m[2] + "/" + m[1] : "";
+  }
 
   function idCardFrontHtml(s, ctx) {
     const photoOk = idHasPhoto(s);
@@ -5807,6 +5815,7 @@ Answer: False</pre>
     const phones = (ctx.contact.phones || []).filter(Boolean).join(", ");
     const code = ctx.codes && ctx.codes[s.id];
     const link = code ? ID_VERIFY_BASE + "/?v=" + code : "";
+    const card = ctx.cards && ctx.cards[s.id];
     return `<div class="idc idc-back ${idLevelClass(s)}">
       <div class="idc-bhead">Faith International School, Itobe</div>
       <p>Property of the school. If found, please return it ${(ctx.contact.address || phones || ctx.contact.email) ? "to the address below." : "to the school office."}</p>
@@ -5814,6 +5823,7 @@ Answer: False</pre>
       ${phones ? `<p>Tel: ${idEsc(phones)}</p>` : ""}
       ${ctx.contact.email ? `<p>${idEsc(ctx.contact.email)}</p>` : ""}
       ${link ? `<div class="idc-qr"><div class="idc-qrbox" data-url="${idEsc(link)}"></div><span>Scan to verify</span></div>` : ""}
+      ${card ? `<div class="idc-meta"><span>Serial No.</span><strong>${idEsc(card.serial)}</strong><span>Issued: ${idEsc(idFmtDate(card.issued))}</span><span>Expires: ${idEsc(idFmtDate(card.expiry))}</span></div>` : ""}
       <img class="idc-stamp" src="data:image/png;base64,${PRINCIPAL_STAMP_BASE64}" alt="">
       <div class="idc-motto">"In God We Trust"</div>
     </div>`;
@@ -5952,6 +5962,7 @@ Answer: False</pre>
 
     // Each student's permanent QR code (created the first time a card is printed)
     let codes = {};
+    let cards = {};
     if (layout === "both") {
       try {
         const res = await fetchWithTimeout(API_BASE + "/api/students/verify-codes", {
@@ -5969,6 +5980,25 @@ Answer: False</pre>
         codes = data.codes || {};
         const missing = chosen.filter(s => !codes[s.id]).length;
         if (missing) throw new Error("Could not create QR codes for " + missing + " student(s).");
+
+        // Serial number, issue date and expiry date (created once, then always reused)
+        const res2 = await fetchWithTimeout(API_BASE + "/api/students/card-serials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ studentIds: chosen.map(s => s.id) })
+        }, 25000);
+        const data2 = await res2.json();
+        if (!res2.ok) {
+          const detail2 = String(data2.detail || data2.error || "");
+          throw new Error(/no such column/i.test(detail2)
+            ? "The card_serial columns are missing. Run the card serial ALTER TABLE migration in the D1 console first."
+            : (data2.error || "Could not create the card serial numbers."));
+        }
+        cards = data2.cards || {};
+        if (Array.isArray(data2.skipped) && data2.skipped.length) {
+          const names = data2.skipped.slice(0, 5).map(x => x.name).join(", ");
+          throw new Error("No serial/expiry could be made for " + data2.skipped.length + " student(s): " + names + ". " + data2.skipped[0].reason + " Untick them or fix the class name, then print again.");
+        }
       } catch (err) {
         showMsg("idPrintMsg", (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
         btn.disabled = false;
@@ -5987,7 +6017,8 @@ Answer: False</pre>
     const ctx = {
       className: (opt && opt.dataset.name) || "",
       contact,
-      codes
+      codes,
+      cards
     };
 
     const html = `<!DOCTYPE html>
