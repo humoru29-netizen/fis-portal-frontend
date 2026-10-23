@@ -6115,6 +6115,7 @@ Answer: False</pre>
           <div class="idc-name">${idEsc(t.name)}</div>
           <div class="idc-row"><i>Staff ID</i>${idEsc(staffNo || "—")}</div>
           <div class="idc-row"><i>Position</i>${idEsc(t.job_title || (t.role === "teacher" ? "Teacher" : "Staff"))}</div>
+          <div class="idc-row"><i>Issued</i>${idEsc(ctx.issued || "")}</div>
         </div>
       </div>
       <div class="idc-lvl">${levelLine}</div>
@@ -6229,7 +6230,8 @@ Answer: False</pre>
       return;
     }
 
-    const ctx = { contact, cards, codes };
+    const issued = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    const ctx = { contact, cards, codes, issued };
     const html = `<!DOCTYPE html>
       <html>
       <head>
