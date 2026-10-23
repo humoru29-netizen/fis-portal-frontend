@@ -15070,11 +15070,7 @@ Answer: False</pre>
           form.append("file", blob, "signature.png");
           form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
           form.append("folder", "staff-signatures");
-          // Unique public_id each time so a replacement is never blocked by
-          // Cloudinary's "resource already exists" rule on unsigned presets.
-          form.append("public_id", "sig-" + staffId + "-" + Date.now());
-          form.append("overwrite", "true");
-          form.append("invalidate", "true");
+          form.append("public_id", "sig-" + staffId);
           const up = await fetchWithTimeout(
             "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload",
             { method: "POST", body: form },
@@ -15136,11 +15132,7 @@ Answer: False</pre>
           form.append("file", file);
           form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
           form.append("folder", "staff-photos");
-          // Unique public_id each time so a replacement photo is not blocked
-          // by Cloudinary when the same staff id already has an image.
-          form.append("public_id", "staff-" + staffId + "-" + Date.now());
-          form.append("overwrite", "true");
-          form.append("invalidate", "true");
+          form.append("public_id", "staff-" + staffId);
           const up = await fetchWithTimeout(
             "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload",
             { method: "POST", body: form },
