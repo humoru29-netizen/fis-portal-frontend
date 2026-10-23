@@ -6103,7 +6103,7 @@ Answer: False</pre>
     const initials = String(t.name || "?").trim().split(/\s+/).slice(0, 2).map(x => x.charAt(0).toUpperCase()).join("");
     const lvl = idStaffLevelClass(t);
     const staffNo = (ctx.cards && ctx.cards[t.id] && ctx.cards[t.id].staffNo) || "";
-    const levelLine = t.level === "primary" ? "Primary School" : (t.level === "secondary" ? "Secondary School" : "Teaching Staff");
+    const levelLine = t.level === "primary" ? "Primary School" : (t.level === "secondary" ? "Secondary School" : "Staff");
     return `<div class="idc front ${lvl}">
       <div class="idc-head">
         <img src="data:image/png;base64,${SCHOOL_LOGO_BASE64}" alt="">
@@ -6114,12 +6114,12 @@ Answer: False</pre>
         <div class="idc-info">
           <div class="idc-name">${idEsc(t.name)}</div>
           <div class="idc-row"><i>Staff ID</i>${idEsc(staffNo || "—")}</div>
-          <div class="idc-row"><i>Position</i>Teacher</div>
+          <div class="idc-row"><i>Position</i>${idEsc(t.job_title || (t.role === "teacher" ? "Teacher" : "Staff"))}</div>
         </div>
       </div>
       <div class="idc-lvl">${levelLine}</div>
       <div class="idc-sig">${t.signature_url && /^https?:\/\//i.test(t.signature_url) ? `<img src="${idEsc(t.signature_url)}" alt="">` : ""}<div class="idc-sig-line">Signature</div></div>
-      <div class="idc-foot">TEACHER IDENTITY CARD</div>
+      <div class="idc-foot">STAFF IDENTITY CARD</div>
     </div>`;
   }
 
@@ -6147,7 +6147,7 @@ Answer: False</pre>
       return `
         <label style="display:flex; align-items:center; gap:8px; font-weight:normal; padding:6px 0; border-bottom:1px solid #f0e6c8;">
           <input type="checkbox" class="id-staff-checkbox" value="${idEsc(t.id)}" style="width:auto;" checked>
-          <span>${idEsc(t.name)} <span style="color:#8A7A72;">— ${lvl}${t.staff_no ? " — " + idEsc(t.staff_no) : ""}${idStaffHasPhoto(t) ? "" : " — no photo"}</span></span>
+          <span>${idEsc(t.name)} <span style="color:#8A7A72;">— ${t.job_title ? idEsc(t.job_title) + " — " : ""}${lvl}${t.staff_no ? " — " + idEsc(t.staff_no) : ""}${idStaffHasPhoto(t) ? "" : " — no photo"}</span></span>
         </label>`;
     }).join("");
   }
@@ -6161,13 +6161,13 @@ Answer: False</pre>
       const res = await fetchWithTimeout(API_BASE + "/api/staff", { method: "GET", headers: authHeaders() });
       const data = await res.json();
       if (!res.ok) { showMsg("idStaffMsg", data.error || "Could not load teachers.", "error"); return; }
-      idStaffTeachers = (data.staff || []).filter(s => s.role === "teacher" && s.status === "active");
-      if (!idStaffTeachers.length) { showMsg("idStaffMsg", "No active teacher accounts found.", "error"); return; }
+      idStaffTeachers = (data.staff || []).filter(s => s.status === "active");
+      if (!idStaffTeachers.length) { showMsg("idStaffMsg", "No active staff accounts found.", "error"); return; }
       renderIdStaffList();
       el("idStaffSelectAll").checked = true;
       el("idStaffArea").style.display = "block";
       const noPhoto = idStaffTeachers.filter(t => !idStaffHasPhoto(t)).length;
-      if (noPhoto) showMsg("idStaffMsg", noPhoto + " teacher(s) have no photo and will show initials. Add photos under Manage Accounts.", "success");
+      if (noPhoto) showMsg("idStaffMsg", noPhoto + " staff member(s) have no photo and will show initials. Add photos under Manage Accounts.", "success");
     } catch (err) {
       showMsg("idStaffMsg", "Could not load teachers. Check your connection.", "error");
     } finally {
@@ -14889,7 +14889,7 @@ Answer: False</pre>
       : `<span style="color:#1e5631; font-weight:600;">Active</span>`;
 
     return `
-      <div class="roster-item" data-staff-id="${s.id}">
+      <div class="roster-item" data-staff-id="${s.id}" style="display:block;">
         <p class="roster-item-name">${s.name}</p>
         <p class="roster-item-meta">${s.email} · ${statusBadge}</p>
 
@@ -14931,6 +14931,11 @@ Answer: False</pre>
           </select>
         </div>
         <button type="button" class="ma-save-role-btn" data-staff-id="${s.id}" style="margin-top:8px;">Save Role/Level</button>
+
+        <div style="margin-top:10px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+          <input type="text" class="ma-title-input" data-staff-id="${s.id}" maxlength="60" placeholder="ID card position e.g. Vice Principal (Acad)" value="${(s.job_title || "").replace(/"/g, "&quot;")}" style="flex:1 1 180px; min-width:0;">
+          <button type="button" class="ma-save-title-btn" data-staff-id="${s.id}">Save Position</button>
+        </div>
 
         <div class="row2" style="margin-top:10px;">
           <button type="button" class="ma-suspend-btn" data-staff-id="${s.id}" data-current-status="${s.status}">
@@ -15214,6 +15219,35 @@ Answer: False</pre>
       });
     });
 
+    document.querySelectorAll(".ma-save-title-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const staffId = btn.dataset.staffId;
+        const jobTitle = document.querySelector(`.ma-title-input[data-staff-id="${staffId}"]`).value.trim();
+
+        btn.disabled = true;
+        try {
+          const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId + "/job-title", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ jobTitle })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const detail = String(data.detail || data.error || "");
+            maItemMsg(staffId, /no such column/i.test(detail)
+              ? "The job_title column is missing. Run: ALTER TABLE users ADD COLUMN job_title TEXT; in the D1 console first."
+              : (data.error || "Could not save position."), "error");
+            return;
+          }
+          maItemMsg(staffId, data.message || "Saved.", "success");
+        } catch (err) {
+          maItemMsg(staffId, (err && err.message) || "Could not reach the portal server. Check your connection.", "error");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
     document.querySelectorAll(".ma-save-role-btn").forEach(btn => {
       btn.addEventListener("click", async () => {
         const staffId = btn.dataset.staffId;
@@ -15449,13 +15483,13 @@ Answer: False</pre>
           var subj = (d.subjects || []).map(function (x) {
             return '<div class="vf-sub"><b>' + esc(x.subject) + '</b><span>' + esc((x.classes || []).join(", ")) + '</span></div>';
           }).join("");
-          show("ok", "✓", "Valid teacher",
+          show("ok", "✓", "Valid staff",
             '<p class="vf-name">' + esc(d.name) + '</p>' +
             (d.staffNo ? '<div class="vf-row"><span>Staff ID</span><b>' + esc(d.staffNo) + '</b></div>' : '') +
+            (d.jobTitle ? '<div class="vf-row"><span>Position</span><b>' + esc(d.jobTitle) + '</b></div>' : '') +
             '<div class="vf-row"><span>Section</span><b>' + esc(tl) + '</b></div>' +
             (d.phone ? '<div class="vf-row"><span>Phone</span><b><a href="tel:' + esc(String(d.phone).replace(/[^0-9+]/g, "")) + '">' + esc(d.phone) + '</a></b></div>' : '') +
-            '<div class="vf-h">Subjects taught</div>' +
-            (subj || '<div class="vf-sub"><span>No subjects assigned yet.</span></div>'),
+            (subj ? '<div class="vf-h">Subjects taught</div>' + subj : ''),
             "Checked live against the school's records.");
         } else if (r.ok && d.valid) {
           var lvl = d.level === "secondary" ? "Secondary School" : "Primary School";
