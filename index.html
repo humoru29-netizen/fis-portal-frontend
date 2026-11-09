@@ -5944,6 +5944,17 @@ Answer: False</pre>
     .idc-meta strong { display: block; font-size: 7.2pt; line-height: 3.2mm; color: var(--c); letter-spacing: 0.2px; }
   `;
 
+  // Faint school-crest watermark behind the content of every ID card (front and back, all designs).
+  // Built at print time (not inside ID_CARD_STYLES) because SCHOOL_LOGO_BASE64 is declared later in the file.
+  // To make it stronger or fainter change the opacity; to resize it change the width/height.
+  function idWatermarkCss() {
+    return `
+    .idc { isolation: isolate; }
+    .idc::before { content: ""; position: absolute; left: 50%; top: calc(50% + 6mm); width: 40mm; height: 40mm; transform: translate(-50%, -50%); background: url(data:image/png;base64,${SCHOOL_LOGO_BASE64}) center / contain no-repeat; opacity: 0.1; z-index: -1; pointer-events: none; }
+    .idc-back::before { top: 50%; }
+    `;
+  }
+
   function idHasPhoto(s) {
     return typeof s.photo_key === "string" && /^https?:\/\//i.test(s.photo_key);
   }
@@ -6207,7 +6218,7 @@ Answer: False</pre>
       <head>
         <meta charset="UTF-8">
         <title>ID Cards — ${idEsc(ctx.className)}</title>
-        <style>${ID_CARD_STYLES}</style>
+        <style>${ID_CARD_STYLES}${idWatermarkCss()}</style>
       </head>
       <body>${idCardPagesHtml(chosen, ctx, layout)}
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
@@ -6378,7 +6389,7 @@ Answer: False</pre>
       <head>
         <meta charset="UTF-8">
         <title>Teacher ID Cards</title>
-        <style>${ID_CARD_STYLES}</style>
+        <style>${ID_CARD_STYLES}${idWatermarkCss()}</style>
       </head>
       <body>${idStaffPagesHtml(chosen, ctx, layout)}
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
@@ -15303,7 +15314,7 @@ Answer: False</pre>
             30000
           );
           const upData = await up.json();
-          if (!up.ok) throw new Error((upData.error && upData.error.message) || "Signature upload failed.");
+          if (!up.ok) throw new Error(((upData.error && upData.error.message) || "Signature upload failed.") + " [preset: " + CLOUDINARY_UPLOAD_PRESET + ", cloud: " + CLOUDINARY_CLOUD_NAME + "]");
           const signatureUrl = upData.secure_url;
 
           const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId + "/signature", {
@@ -15365,7 +15376,7 @@ Answer: False</pre>
             30000
           );
           const upData = await up.json();
-          if (!up.ok) throw new Error((upData.error && upData.error.message) || "Photo upload failed.");
+          if (!up.ok) throw new Error(((upData.error && upData.error.message) || "Photo upload failed.") + " [preset: " + CLOUDINARY_UPLOAD_PRESET + ", cloud: " + CLOUDINARY_CLOUD_NAME + "]");
           const photoUrl = upData.secure_url;
 
           const res = await fetchWithTimeout(API_BASE + "/api/staff/" + staffId + "/photo", {
